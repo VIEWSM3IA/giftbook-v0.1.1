@@ -36,7 +36,7 @@
   }
   function nav(to) {
     if (current?.type === 'home' && !to.startsWith('home')) homeScroll = scrollY;
-    if (to === 'person-new' || to.startsWith('record/') || to.startsWith('person-edit/') || to.startsWith('gift-edit/'))
+    if (to === 'person-new' || to.startsWith('record/') || to.startsWith('person-edit/') || to.startsWith('gift-edit/') || to.startsWith('case-new/') || to.startsWith('case-edit/'))
       sheetBackground = app.innerHTML;
     else if (!to.startsWith('gift/')) sheetBackground = '';
     if (location.hash.slice(1) === to) render();
@@ -119,6 +119,12 @@
   function hideTabs() {
     tabs.className = '';
     tabs.innerHTML = '';
+    tabs.hidden = true;
+  }
+  function showTabs(active) {
+    tabs.hidden = false;
+    tabs.className = 'bottom-nav';
+    tabs.innerHTML = `<button data-go="home" class="${active === 'home' ? 'active' : ''}" ${active === 'home' ? 'aria-current="page"' : ''}>礼物簿</button><button data-go="cases" class="${active === 'cases' ? 'active' : ''}" ${active === 'cases' ? 'aria-current="page"' : ''}>看看</button>`;
   }
   function welcome() {
     hideTabs();
@@ -136,7 +142,7 @@
   }
   function logHTML(gifts) {
     if (!gifts.length) return `<div class="log-empty"><h3>还没有礼物记录</h3><button data-action="add-gift">记第一份</button></div>`;
-    return D.giftLog(gifts).map((g) => `<div class="log-shell" id="gift-${e(g.id)}"><div class="swipe-actions"><button data-go="gift-edit/${e(g.id)}">编辑</button><button data-action="delete-inline" data-id="${e(g.id)}">删除</button></div><article class="log-entry" data-gift-id="${e(g.id)}" tabindex="0" role="button" aria-label="查看${e(g.gift_name)}"><time class="log-date" datetime="${e(g.gifted_at)}"><strong>${e(g.log_date)}</strong>${g.log_year ? `<span>${e(g.log_year)}</span>` : ''}</time><div class="log-title-row"><h3>${e(g.gift_name)}</h3><button class="log-more" data-action="gift-menu" data-id="${e(g.id)}" aria-label="${e(g.gift_name)}更多操作">•••</button></div>${g.log_meta ? `<p class="log-meta">${e(g.log_meta)}</p>` : ''}<p class="log-reaction">${e(g.log_reaction)}</p>${g.note ? `<p class="log-note">${e(g.note)}</p>` : ''}</article></div>`).join('');
+    return D.giftLog(gifts).map((g) => `<div class="log-shell" id="gift-${e(g.id)}"><div class="swipe-actions"><button data-go="gift-edit/${e(g.id)}">编辑</button><button data-action="delete-inline" data-id="${e(g.id)}">删除</button></div><article class="log-entry" data-gift-id="${e(g.id)}" tabindex="0" role="button" aria-label="查看${e(g.gift_name)}"><time class="log-date" datetime="${e(g.gifted_at)}"><strong>${e(g.log_date)}</strong>${g.log_year ? `<span>${e(g.log_year)}</span>` : ''}</time><div class="log-title-row"><h3>${e(g.gift_name)}</h3><button class="log-more" data-action="gift-menu" data-id="${e(g.id)}" aria-label="${e(g.gift_name)}更多操作">•••</button></div>${g.log_meta ? `<p class="log-meta">${e(g.log_meta)}</p>` : ''}<p class="log-reaction">${e(g.log_reaction)}</p>${g.note ? `<p class="log-note">${e(g.note)}</p>` : ''}<div class="share-strip"><span>这次经历可以帮到别人</span><button data-go="case-new/${e(g.id)}">匿名分享</button></div></article></div>`).join('');
   }
   async function selectRecipient(id, remember = true) {
     if (current?.type !== 'home') return;
@@ -179,7 +185,7 @@
     const id = [query.get('recipient'), user.last_active_recipient_id, people[0]?.id]
       .find((candidate) => people.some((p) => p.id === candidate));
     current = { type: 'home', people, person: null, gifts: [], cursor: null, sequence: 0 };
-    hideTabs();
+    showTabs('home');
     app.innerHTML = bookHeader() + (people.length
       ? `<div id="book-tabs">${recipientTabs(people, id)}</div><div id="book-content"></div>`
       : '<section class="book-first"><h2>还没有人</h2><button data-go="person-new">添加第一个人</button></section>');
@@ -268,7 +274,70 @@
     hideTabs();
     app.innerHTML =
       top('home?recipient=' + p.id, '<button class="text-button" data-action="edit-detail-gift">编辑</button>') +
-      `<section class="record-hero"><h1 class="detail-title">${e(g.gift_name)}</h1><div class="record-reaction">${e(D.reaction(g.reaction_level).label)}</div></section><dl class="detail-list"><div class="detail-line"><dt>送给</dt><dd>${e(p.display_name)}</dd></div><div class="detail-line"><dt>日期</dt><dd>${e(D.formatDate(g.gifted_at))}</dd></div>${g.occasion ? `<div class="detail-line"><dt>场景</dt><dd>${e(g.occasion)}</dd></div>` : ''}${g.price_fen !== null && g.price_fen !== undefined ? `<div class="detail-line"><dt>价格</dt><dd>¥ ${e(D.formatPrice(g.price_fen))}</dd></div>` : ''}</dl>${g.note ? `<section class="note-card"><p>${e(g.note)}</p></section>` : ''}<button class="danger-button" data-action="delete-gift">删除这条记录</button>`;
+      `<section class="record-hero"><h1 class="detail-title">${e(g.gift_name)}</h1><div class="record-reaction">${e(D.reaction(g.reaction_level).label)}</div></section><dl class="detail-list"><div class="detail-line"><dt>送给</dt><dd>${e(p.display_name)}</dd></div><div class="detail-line"><dt>日期</dt><dd>${e(D.formatDate(g.gifted_at))}</dd></div>${g.occasion ? `<div class="detail-line"><dt>场景</dt><dd>${e(g.occasion)}</dd></div>` : ''}${g.price_fen !== null && g.price_fen !== undefined ? `<div class="detail-line"><dt>价格</dt><dd>¥ ${e(D.formatPrice(g.price_fen))}</dd></div>` : ''}</dl>${g.note ? `<section class="note-card"><p>${e(g.note)}</p></section>` : ''}<button class="primary case-share" data-go="case-new/${e(g.id)}">匿名分享</button><button class="danger-button" data-action="delete-gift">删除这条记录</button>`;
+  }
+  const caseFilters = [
+    ['relation_type', '关系', D.RELATIONS], ['age_range', '年龄段', D.AGE_BUCKETS],
+    ['occasion', '场景', D.OCCASIONS], ['price_range', '预算', D.PRICE_RANGES],
+    ['wanted_level', '想要程度', D.WANTED_LEVELS]
+  ];
+  function caseCard(item, mine = false) {
+    const content = `<h3>${e(item.gift_name)}</h3><p>${e(item.relation_type)} · ${e(item.age_range)} 岁 · ${e(item.occasion)}</p><p>${e(item.price_range)} 元 · ${e(item.wanted_level)}</p><p class="case-result">${e(D.reaction(item.reaction_level).label)} · ${e(item.behavior)}</p>${item.experience ? `<p class="case-experience">“${e(item.experience)}”</p>` : ''}`;
+    const visible = item.status !== 'removed';
+    return `<article class="case-card">${visible ? `<button class="case-open" data-go="case/${e(item.id)}">${content}</button>` : `<div class="case-open">${content}</div>`}${mine ? `<p class="case-status">${visible ? '公开中' : '已下架'} · 有帮助 ${item.helpful_count}</p>${visible ? `<div class="case-actions"><button data-go="case-edit/${e(item.id)}">编辑</button><button data-action="unpublish-case" data-id="${e(item.id)}">下架</button></div>` : ''}` : `<div class="case-actions"><button data-action="helpful-case" data-id="${e(item.id)}" ${item.helped || item.is_mine ? 'disabled' : ''}>${item.is_mine ? '我的分享' : item.helped ? '已觉得有帮助' : '有帮助'} · ${item.helpful_count}</button></div>`}</article>`;
+  }
+  async function cases(version, query) {
+    const params = new URLSearchParams(query);
+    const result = await api('/cases?' + params);
+    if (version !== routeVersion) return;
+    current = { type: 'cases', params, items: result.items, nextOffset: result.next_offset };
+    showTabs('cases');
+    app.innerHTML = `<header class="explore-header"><h1>看看</h1><button data-go="my-cases">我的分享 ›</button></header><p class="case-intro">来自真实礼物记录的匿名分享</p><div class="case-filters">${caseFilters.map(([field, label, options]) => `<label><span>${label}</span><select data-filter="${field}" aria-label="${label}">${optionList(options, params.get(field) || '', '全部')}</select></label>`).join('')}</div><div id="case-list">${result.items.length ? result.items.map((item) => caseCard(item)).join('') : '<p class="case-empty">还没有符合条件的案例。可以换个条件看看。</p>'}</div>${result.next_offset !== null ? '<button class="load-more" data-action="load-more-cases">加载更多</button>' : ''}`;
+  }
+  async function myCases(version) {
+    const items = await api('/me/cases');
+    if (version !== routeVersion) return;
+    current = { type: 'my-cases', items };
+    hideTabs();
+    app.innerHTML = top('cases') + `<h1 class="settings-title">我的分享</h1><p class="case-intro">下架不会删除你的礼物记录。</p>${items.length ? items.map((item) => caseCard(item, true)).join('') : '<p class="case-empty">还没有分享。打开礼物记录就能匿名分享。</p>'}`;
+  }
+  async function caseDetail(id, version) {
+    const item = await api('/cases/' + id);
+    if (version !== routeVersion) return;
+    current = { type: 'case', item };
+    hideTabs();
+    const rows = [['关系', item.relation_type], ['年龄段', item.age_range + ' 岁'], ['场景', item.occasion], ['价格区间', item.price_range + ' 元'], ['对方之前想要吗', item.wanted_level], ['TA 的反应', D.reaction(item.reaction_level).label], ['行为证据', item.behavior], ...(item.experience ? [['一句经验', item.experience]] : [])];
+    app.innerHTML = top('cases') + `<section class="record-hero"><h1>${e(item.gift_name)}</h1><p class="case-intro">匿名真实送礼案例</p></section><dl class="detail-list">${rows.map(([label, value]) => `<div class="detail-line"><dt>${e(label)}</dt><dd>${e(value)}</dd></div>`).join('')}</dl><button class="primary case-share" data-action="helpful-case" data-id="${e(id)}" ${item.helped || item.is_mine ? 'disabled' : ''}>${item.is_mine ? '我的分享' : item.helped ? '已觉得有帮助' : '有帮助'} · ${item.helpful_count}</button>`;
+  }
+  async function caseForm(sourceId, edit, version) {
+    let item, giftName;
+    if (edit) {
+      item = (await api('/me/cases')).find((entry) => entry.id === sourceId && entry.status === 'published');
+      if (!item) throw new Error('分享不存在或已下架');
+      giftName = item.gift_name;
+    } else {
+      const gift = await api('/gifts/' + sourceId);
+      const person = await api('/recipients/' + gift.recipient_id);
+      item = { relation_type: person.relation_type, age_range: person.age_range, occasion: gift.occasion, price_range: D.priceRange(gift.price_fen), wanted_level: '', reaction_level: gift.reaction_level, behavior: '', experience: '' };
+      giftName = gift.gift_name;
+    }
+    if (version !== routeVersion) return;
+    current = { type: 'case-form', sourceId, edit, giftName };
+    hideTabs();
+    const fields = [selectField('关系', 'relation_type', D.RELATIONS, item.relation_type, '请选择'), selectField('年龄段', 'age_range', D.AGE_BUCKETS, item.age_range, '请选择'), selectField('场景', 'occasion', D.OCCASIONS, item.occasion, '请选择'), selectField('价格区间', 'price_range', D.PRICE_RANGES, item.price_range, '请选择'), selectField('对方之前想要吗', 'wanted_level', D.WANTED_LEVELS, item.wanted_level, '请选择')].join('');
+    app.innerHTML = sheetFrame(edit ? 'my-cases' : 'gift/' + sourceId, `<header class="form-heading"><h1>${edit ? '编辑匿名分享' : '匿名分享这次经历'}</h1><p class="case-intro">来自你的“${e(giftName)}”记录。不会公开 TA 的称呼或私人备注。</p></header><form data-form="case" data-id="${edit ? e(sourceId) : ''}" data-source="${edit ? '' : e(sourceId)}" novalidate>${fields}<fieldset class="reaction-section"><legend>TA 的实际反应</legend><div class="reactions">${D.REACTIONS.map((r) => `<label class="reaction-choice"><input type="radio" name="reaction_level" value="${r.value}" ${Number(item.reaction_level) === r.value ? 'checked' : ''}><span>${r.label}</span></label>`).join('')}</div></fieldset>${inputField('行为证据 · 必填', 'behavior', item.behavior, '比如：当天就用了', 80)}${noteField('experience', item.experience, 120, '一句经验', '什么细节可能帮到别人？')}<section class="case-preview"><h2>公开预览</h2><h3 data-preview="gift"></h3><p data-preview="facts"></p><p data-preview="price"></p><p data-preview="reaction"></p><p data-preview="experience"></p></section><p class="case-intro">发布前会检查联系方式、地址和私人称呼。公开后可在“我的分享”编辑或下架。</p><div id="form-error" class="error" role="alert"></div><button type="submit" class="primary">${edit ? '保存修改' : '确认匿名分享'}</button></form>`);
+    updateCasePreview(app.querySelector('form[data-form="case"]'));
+  }
+  function updateCasePreview(form) {
+    if (!form || current?.type !== 'case-form') return;
+    const value = Object.fromEntries(new FormData(form));
+    for (const [key, content] of Object.entries({
+      gift: current.giftName,
+      facts: `${value.relation_type || '关系'} · ${value.age_range || '年龄段'} 岁 · ${value.occasion || '场景'}`,
+      price: `${value.price_range || '价格区间'} 元 · ${value.wanted_level || '想要程度'}`,
+      reaction: `${D.reaction(value.reaction_level).label} · ${value.behavior || '行为证据'}`,
+      experience: value.experience ? `“${value.experience}”` : ''
+    })) form.querySelector(`[data-preview="${key}"]`).textContent = content;
   }
   async function me(version) {
     const data = await api('/me');
@@ -285,7 +354,7 @@
     const [path, queryString] = raw.split('?');
     const [view, id] = path.split('/');
     const query = new URLSearchParams(queryString || '');
-    document.body.classList.toggle('sheet-open', ['person-new', 'person-edit', 'record', 'gift-edit'].includes(view));
+    document.body.classList.toggle('sheet-open', ['person-new', 'person-edit', 'record', 'gift-edit', 'case-new', 'case-edit'].includes(view));
     if (dialog.open) dialog.close();
     window.scrollTo(0, 0);
     if (!token || view === 'welcome') {
@@ -308,6 +377,11 @@
       else if (view === 'record') await recordForm(id, '', version);
       else if (view === 'gift-edit' && id) await recordForm('', id, version);
       else if (view === 'gift' && id) await giftDetail(id, version);
+      else if (view === 'cases') await cases(version, query);
+      else if (view === 'my-cases') await myCases(version);
+      else if (view === 'case' && id) await caseDetail(id, version);
+      else if (view === 'case-new' && id) await caseForm(id, false, version);
+      else if (view === 'case-edit' && id) await caseForm(id, true, version);
       else if (view === 'me') await me(version);
       else nav('home');
     } catch (error) {
@@ -388,6 +462,35 @@
       if (current?.person) nav('record/' + current.person.id);
       return;
     }
+    if (name === 'helpful-case') {
+      const result = await api('/cases/' + button.dataset.id + '/helpful', 'POST', {});
+      button.disabled = true;
+      button.textContent = `已觉得有帮助 · ${result.helpful_count}`;
+      return;
+    }
+    if (name === 'unpublish-case') {
+      const item = current?.items?.find((entry) => entry.id === button.dataset.id);
+      if (!item) return;
+      confirmAction('下架这条分享？', '公开案例会消失，私人礼物记录仍会保留。', '下架', async () => {
+        await api('/cases/' + item.id, 'DELETE');
+        render();
+      });
+      return;
+    }
+    if (name === 'load-more-cases') {
+      if (current?.type !== 'cases' || current.nextOffset == null) return;
+      button.disabled = true;
+      try {
+        const params = new URLSearchParams(current.params);
+        params.set('offset', current.nextOffset);
+        const result = await api('/cases?' + params);
+        current.items.push(...result.items);
+        current.nextOffset = result.next_offset;
+        app.querySelector('#case-list').insertAdjacentHTML('beforeend', result.items.map((item) => caseCard(item)).join(''));
+        if (result.next_offset === null) button.remove(); else button.disabled = false;
+      } catch (error) { button.disabled = false; throw error; }
+      return;
+    }
     if (name === 'retry-person') {
       if (current?.person) await selectRecipient(current.person.id, false);
       return;
@@ -425,7 +528,7 @@
     }
     if (name === 'privacy') {
       openDialog(
-        `<h2>只属于你的礼物簿</h2><p>TA 与礼物记录默认仅自己可见。称呼不必是真实姓名，也不需要填写联系方式。\n\n记录会保存在本服务中。退出登录会保留记录；注销账号会删除账号及私人记录，无法恢复。\n\n本地网页使用此浏览器保存的账号凭证识别你。请保留浏览器数据，避免丢失重新进入礼物簿的凭证。</p><div class="dialog-actions"><button class="primary" data-action="close-dialog" autofocus>知道了</button></div>`
+        `<h2>隐私与数据</h2><p>TA 与礼物记录默认仅自己可见。主动匿名分享时，只有确认的案例字段公开，TA 称呼与私人备注不公开；可在“我的分享”下架。\n\n记录会保存在本服务中。退出登录会保留记录；注销账号会删除账号、私人记录及分享，无法恢复。\n\n本地网页使用此浏览器保存的账号凭证识别你。请保留浏览器数据，避免丢失重新进入礼物簿的凭证。</p><div class="dialog-actions"><button class="primary" data-action="close-dialog" autofocus>知道了</button></div>`
       );
       return;
     }
@@ -674,9 +777,16 @@
   });
   document.addEventListener('input', (event) => {
     const form = event.target.closest('form');
-    if (form) saveDraft(form);
+    if (form) { saveDraft(form); if (form.dataset.form === 'case') updateCasePreview(form); }
   });
   document.addEventListener('change', (event) => {
+    if (event.target.dataset.filter) {
+      const params = new URLSearchParams(current?.params || '');
+      if (event.target.value) params.set(event.target.dataset.filter, event.target.value);
+      else params.delete(event.target.dataset.filter);
+      nav('cases' + (params.toString() ? '?' + params : ''));
+      return;
+    }
     const form = event.target.closest('form');
     if (!form) return;
     if (event.target.name === 'tags' && new FormData(form).getAll('tags').length > 8) {
@@ -684,6 +794,7 @@
       toast('最多选择 8 个喜好');
     }
     saveDraft(form);
+    if (form.dataset.form === 'case') updateCasePreview(form);
   });
   document.addEventListener(
     'toggle',
@@ -717,6 +828,8 @@
           reaction_level: Number(data.reaction_level),
           price_fen: D.parsePrice(data.price)
         });
+      else if (form.dataset.form === 'case')
+        payload = D.validateCase({ ...data, reaction_level: Number(data.reaction_level) });
       else {
         const value = data.display_name.trim();
         if (!value || Array.from(value).length > 20) throw new Error('昵称请填写 1–20 个字');
@@ -746,6 +859,13 @@
             document.body.classList.remove('sheet-open');
           } else nav('home?recipient=' + result.recipient_id);
           toast(id ? '已保存修改' : '已记下这份礼物');
+        }
+      } else if (form.dataset.form === 'case') {
+        const id = form.dataset.id;
+        const item = await api('/cases' + (id ? '/' + id : ''), id ? 'PATCH' : 'POST', id ? payload : { ...payload, source_gift_id: form.dataset.source });
+        if (version === routeVersion) {
+          nav(id ? 'my-cases' : 'case/' + item.id);
+          toast(id ? '分享已更新' : '匿名分享成功');
         }
       } else {
         await api('/me', 'PATCH', payload);

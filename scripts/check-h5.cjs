@@ -38,7 +38,8 @@ const previewPassword = process.env.PREVIEW_ACCESS_PASSWORD || '';
     assert.equal(await page.getByText(/送礼不用猜|为你珍藏|记录每一份心意/).count(), 0);
     for (const width of [320, 390, 430]) {
       await page.setViewportSize({ width, height: 844 });
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width,
+        JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('*')].filter((el) => el.getBoundingClientRect().right > innerWidth + 1).slice(0, 8).map((el) => [el.className, el.getBoundingClientRect().right]))));
     }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: output + '/00-login.png' });
@@ -132,6 +133,64 @@ const previewPassword = process.env.PREVIEW_ACCESS_PASSWORD || '';
     assert.equal(page.url(), detailUrl);
     assert.equal(await page.locator('#detail-sheet').count(), 0);
     assert.equal((await call('/gifts/' + giftId)).data.gift_name, '拍立得相机');
+    await click('匿名分享');
+    await page.locator('form[data-form="case"]').waitFor();
+    assert.match(await page.locator('.case-intro').first().innerText(), /不会公开 TA 的称呼/);
+    await page.getByLabel('年龄段', { exact: true }).selectOption('26–30');
+    await page.getByLabel('对方之前想要吗', { exact: true }).selectOption('没提过');
+    await page.getByLabel('行为证据 · 必填').fill('当天就用了');
+    await page.getByLabel(/一句经验/).fill('先了解对方的使用习惯');
+    await click('确认匿名分享');
+    await page.getByRole('heading', { name: '拍立得相机', exact: true }).waitFor();
+    const sharedId = (await call('/me/cases')).data[0].id;
+    assert.equal((await call('/cases/' + sharedId)).data.source_gift_id, undefined);
+    assert.ok(!JSON.stringify((await call('/cases/' + sharedId)).data).includes('后来旅行也一直带着'));
+    await page.screenshot({ path: output + '/06-case-detail.png' });
+    await click('返回');
+    await page.getByRole('heading', { name: '看看', exact: true }).waitFor();
+    await page.getByLabel('关系', { exact: true }).selectOption('恋人');
+    await page.getByRole('heading', { name: '拍立得相机', exact: true }).waitFor();
+    for (const width of [320, 390, 430]) {
+      await page.setViewportSize({ width, height: 844 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width,
+        JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('*')].filter((el) => el.getBoundingClientRect().right > innerWidth + 1).slice(0, 8).map((el) => [el.className, el.getBoundingClientRect().right]))));
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: output + '/07-cases.png' });
+    const viewer = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const viewerPage = await viewer.newPage();
+    viewerPage.on('pageerror', (error) => errors.push(error.message));
+    try {
+      await viewerPage.goto(base);
+      const viewerPassword = viewerPage.getByLabel('验收口令');
+      if (previewPassword && await viewerPassword.count()) {
+        await viewerPassword.fill(previewPassword);
+        await viewerPage.getByRole('button', { name: '继续', exact: true }).click();
+      }
+      await viewerPage.getByRole('button', { name: '开始记录', exact: true }).click();
+      await viewerPage.getByRole('button', { name: '看看', exact: true }).click();
+      await viewerPage.getByRole('heading', { name: '拍立得相机', exact: true }).waitFor();
+      await viewerPage.getByRole('button', { name: '有帮助 · 0' }).click();
+      await viewerPage.getByRole('button', { name: '已觉得有帮助 · 1' }).waitFor();
+      await viewerPage.getByRole('heading', { name: '拍立得相机', exact: true }).click();
+      await viewerPage.getByRole('button', { name: '已觉得有帮助 · 1' }).waitFor();
+      assert.equal((await call('/cases/' + sharedId)).data.helpful_count, 1);
+      await viewerPage.evaluate(async () => fetch('/v1/me', { method: 'DELETE', headers: { Authorization: 'Bearer ' + localStorage.getItem('giftbook_v01_token') } }));
+    } finally { await viewer.close(); }
+    await page.getByRole('button', { name: '我的分享 ›' }).click();
+    await page.getByRole('heading', { name: '我的分享' }).waitFor();
+    await page.getByRole('button', { name: '编辑', exact: true }).click();
+    await page.getByLabel(/一句经验/).fill('旅行时也能使用');
+    await click('保存修改');
+    await page.getByRole('heading', { name: '我的分享' }).waitFor();
+    assert.equal((await call('/cases/' + sharedId)).data.experience, '旅行时也能使用');
+    await page.getByRole('button', { name: '下架', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: '下架', exact: true }).click();
+    await page.getByText('已下架').waitFor();
+    assert.equal((await call('/cases/' + sharedId)).status, 404);
+    assert.equal((await call('/gifts/' + giftId)).status, 200);
+    await page.goto(base + '/#gift/' + giftId);
+    await page.getByRole('heading', { name: '拍立得相机', exact: true }).waitFor();
     await click('返回');
     await page.getByRole('heading', { name: 'Rose', exact: true }).waitFor();
     const touch = await context.newCDPSession(page);

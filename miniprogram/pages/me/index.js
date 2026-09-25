@@ -49,7 +49,7 @@ Page({
     }
   },
   privacy() {
-    wx.showModal({ title: '隐私与数据', content: 'TA 与礼物记录仅自己可见。退出登录会保留记录；注销账号会删除账号与私人记录。', showCancel: false });
+    wx.showModal({ title: '隐私与数据', content: 'TA 与礼物记录默认仅自己可见。主动匿名分享时，只有确认的案例字段公开，TA 称呼与私人备注不公开；可在“我的分享”下架。退出登录保留记录；注销账号删除账号及分享。', showCancel: false });
   },
   about() {
     wx.showModal({ title: '关于礼物簿', content: '围绕具体的 TA，记下送过什么，以及 TA 的真实反应。', showCancel: false });

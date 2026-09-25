@@ -70,10 +70,11 @@ for (const file of walk(root).filter((name) => /\.(js|cjs)$/.test(name))) {
   const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
   if (result.status !== 0) errors.push(`${path.relative(root, file)} JS 语法错误：${result.stderr}`);
 }
-if (app.tabBar?.list?.length) errors.push('V0.1.1 只有礼物簿一个主空间，不应出现底部导航');
+if (JSON.stringify(app.tabBar?.list?.map(({ pagePath, text }) => [pagePath, text])) !== JSON.stringify([['pages/giftbook/index','礼物簿'],['pages/explore/index','看看']]))
+  errors.push('V0.2 底部导航应为礼物簿和看看');
 if ((app.subpackages || []).length) errors.push('V0.1 不应注册未来功能分包');
 for (const file of [...walk(mini).filter((name) => name.endsWith('.wxml')), path.join(root, 'h5/app.js')]) {
-  if (/推荐|收藏|分享|回访|成就|敬请期待/.test(fs.readFileSync(file, 'utf8')))
+  if (/推荐|收藏|回访|成就|敬请期待/.test(fs.readFileSync(file, 'utf8')))
     errors.push(`${path.relative(root, file)} 存在范围外产品入口或文案`);
 }
 for (const file of [...walk(mini).filter((name) => /\.wxss$/.test(name)), path.join(root, 'h5/styles.css')]) {

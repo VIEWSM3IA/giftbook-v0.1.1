@@ -237,6 +237,49 @@ test('PostgreSQL API: CRUD, ownership, concurrent idempotency, privacy and accou
   assert.equal(new Set(ids).size, 7);
   await request('GET', `/v1/recipients/${r.id}/gifts?cursor=invalid`, null, a.token, 400);
   await request('GET', `/v1/recipients/${r.id}/gifts?limit=0`, null, a.token, 400);
+  const caseInput = {
+    source_gift_id: g.id, relation_type: '朋友', age_range: '26–30', occasion: '生日',
+    price_range: '100–300', wanted_level: '没提过', reaction_level: 5,
+    behavior: '当天就用了', experience: '先问清使用习惯'
+  };
+  await request('POST', '/v1/cases', caseInput, b.token, 404);
+  await request('POST', '/v1/cases', { ...caseInput, behavior: '微信号 abc123' }, a.token, 400);
+  for (const behavior of ['微 信：abc123', '微​信 abcd1234', 'QQ：123456789', '138-0012-3456', '@zhangsan', '北京市朝阳区某路1号', '上海市静安区南京西路100弄2栋301室'])
+    await request('POST', '/v1/cases', { ...caseInput, behavior }, a.token, 400);
+  await request('POST', '/v1/cases', { ...caseInput, experience: '虚构乙很开心' }, a.token, 400);
+  const shared = await request('POST', '/v1/cases', caseInput, a.token);
+  assert.equal(shared.status, 'published');
+  await request('POST', '/v1/cases', caseInput, a.token, 409);
+  const publicCase = await request('GET', `/v1/cases/${shared.id}`, null, b.token);
+  assert.equal(publicCase.gift_name, g.gift_name);
+  assert.equal(publicCase.source_gift_id, undefined);
+  assert.equal(publicCase.owner_id, undefined);
+  assert.equal(publicCase.is_mine, false);
+  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, a.token)).is_mine, true);
+  assert.ok(!JSON.stringify(publicCase).includes('不可进入日志的备注'));
+  assert.equal((await request('GET', '/v1/cases?relation_type=朋友&price_range=100%E2%80%93300', null, b.token)).items.length, 1);
+  assert.equal((await request('GET', '/v1/cases?relation_type=家人', null, b.token)).items.length, 0);
+  await request('GET', '/v1/cases?relation_type=无效', null, b.token, 400);
+  await request('POST', `/v1/cases/${shared.id}/helpful`, {}, a.token, 400);
+  assert.equal((await request('POST', `/v1/cases/${shared.id}/helpful`, {}, b.token)).helpful_count, 1);
+  assert.equal((await request('POST', `/v1/cases/${shared.id}/helpful`, {}, b.token)).helpful_count, 1);
+  const voter = await request('POST', '/v1/auth/local/login', { device_key: randomBytes(32).toString('hex') });
+  assert.equal((await request('POST', `/v1/cases/${shared.id}/helpful`, {}, voter.token)).helpful_count, 2);
+  await request('DELETE', '/v1/me', null, voter.token);
+  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).helpful_count, 1);
+  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).helped, true);
+  await request('PATCH', `/v1/cases/${shared.id}`, { ...caseInput, experience: '攻击' }, b.token, 404);
+  await request('DELETE', `/v1/cases/${shared.id}`, null, b.token, 404);
+  await request('PATCH', `/v1/recipients/${r.id}`, { display_name: '改名', relation_type: '家人' }, a.token);
+  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).relation_type, '朋友');
+  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).gift_name, g.gift_name);
+  await request('PATCH', `/v1/cases/${shared.id}`, { ...caseInput, experience: '新的经验' }, a.token);
+  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).experience, '新的经验');
+  await request('DELETE', `/v1/cases/${shared.id}`, null, a.token);
+  await request('GET', `/v1/cases/${shared.id}`, null, b.token, 404);
+  assert.equal((await request('GET', `/v1/gifts/${g.id}`, null, a.token)).id, g.id);
+  const reshared = await request('POST', '/v1/cases', caseInput, a.token);
+  assert.notEqual(reshared.id, shared.id);
   await request(
     'POST',
     '/v1/events',
@@ -257,6 +300,7 @@ test('PostgreSQL API: CRUD, ownership, concurrent idempotency, privacy and accou
   assert.ok(!JSON.stringify(logs).includes('SECRET_'));
   assert.ok(!JSON.stringify(logs).includes(a.token));
   await request('DELETE', `/v1/gifts/${g.id}`, null, a.token);
+  await request('GET', `/v1/cases/${reshared.id}`, null, b.token, 404);
   await request('GET', `/v1/gifts/${g.id}`, null, a.token, 404);
   await request('POST', '/v1/gifts', payload, a.token, 404);
   assert.equal(

@@ -1,6 +1,6 @@
-# 礼物簿 V0.1.1
+# 礼物簿 V0.2
 
-围绕一个人记录送礼经历：建立 TA、维护喜好、记下礼物和反应、查看与修改送礼历史。包含原生微信小程序、H5 页面与 PostgreSQL API；不包含推荐、公开内容等后续版本功能。
+围绕一个人记录送礼经历，并把选定的真实记录匿名分享给其他人参考。包含原生微信小程序、H5 验收预览与 PostgreSQL API；V0.2 新增「礼物簿 / 看看」双入口、匿名案例、筛选、详情、有帮助及我的分享管理。不包含推荐、收藏、AI、评论或社交功能。
 
 ## 固定公网验收地址
 
@@ -32,7 +32,7 @@ npm run preview:h5 -- 43117
 
 ## 微信小程序
 
-用微信开发者工具导入仓库根目录。`miniprogram/` 是原生 WXML/WXSS/JS 工程，只有「礼物簿」一个主空间；TA 横向切换，当前 TA 的送礼记录按时间展示。API 地址在 `miniprogram/config.js`。
+用微信开发者工具导入仓库根目录。`miniprogram/` 是原生 WXML/WXSS/JS 工程，底部有「礼物簿 / 看看」两个入口；TA 横向切换，当前 TA 的送礼记录按时间展示。API 地址在 `miniprogram/config.js`。
 
 微信登录已经实现 `wx.login → 服务端 code2Session → 本产品会话`。未提供真实 AppID、AppSecret，当前不会伪造授权成功。实际微信登录需服务端配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`，并将小程序 API 地址改为已配置的 HTTPS 合法域名；本次公网入口用于 H5 验收。
 
@@ -40,9 +40,10 @@ npm run preview:h5 -- 43117
 
 - `miniprogram/utils/domain.js`：三端共用的字段校验、枚举、金额与日期规则。
 - `server/`：单体 API、短期会话、微信身份交换、私有资源授权。
-- `migrations/001_v01.sql`、`002_v011.sql`：保留原记录，增加 TA 顺序和上次停留的 TA；迁移可重复执行。
+- `migrations/001_v01.sql`、`002_v011.sql`、`003_v02.sql`：保留原记录，并增加独立的公开案例快照与有帮助记录；迁移可重复执行。
 - `h5/`：与原生端一致的功能，使用同源 API。
 - [V0.1.1 交付契约](docs/v011-contract.md)：首页结构、交互、持久化与回退。
+- [V0.2 交付契约](docs/v02-contract.md)：匿名分享、公开字段、审核、管理与数据边界。
 - [验收记录](docs/verification.md)：实际运行的检查及未验证边界。
 
 ```bash

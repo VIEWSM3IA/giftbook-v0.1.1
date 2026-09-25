@@ -200,7 +200,7 @@ test('所有原生模板事件、已注册路由文件、范围均有效', () =>
       assert.equal(typeof definition[match[1]], 'function', `${file}: ${match[1]}`);
   }
   const config = JSON.parse(fs.readFileSync(path.join(mini, 'app.json')));
-  assert.equal(config.pages.length, 4);
+  assert.equal(config.pages.length, 8);
   assert.ok(config.pages.every((page) => !page.endsWith('/create')));
   assert.equal(config.subpackages, undefined);
   for (const page of config.pages)
@@ -256,7 +256,7 @@ test('原生登录只有品牌、短说明、登录和隐私入口', () => {
   assert.equal((source.match(/bindtap="privacy"/g) || []).length, 1);
   assert.doesNotMatch(source, /<image|<svg|book-art|welcome-visual|送过的礼物，|记得的人/);
 });
-test('礼物簿是唯一主空间，新增礼物在当前 TA 的 Sheet 中', async () => {
+test('礼物簿和看看是两个主空间，新增礼物在当前 TA 的 Sheet 中', async () => {
   const h = harness();
   const p = h.load('pages/giftbook/index.js');
   p.setData({ active: recipient });
@@ -270,7 +270,7 @@ test('礼物簿是唯一主空间，新增礼物在当前 TA 的 Sheet 中', asy
   p.create();
   assert.equal(p.data.sheet, 'person');
   const config = JSON.parse(fs.readFileSync(path.join(mini, 'app.json')));
-  assert.equal(config.tabBar, undefined);
+  assert.deepEqual(config.tabBar.list.map((item) => item.text), ['礼物簿', '看看']);
   assert.equal(config.pages.includes('pages/record/index'), false);
   assert.equal(config.pages.includes('pages/recipient/detail'), false);
 });
@@ -444,4 +444,20 @@ test('礼物详情原地编辑：预填共用 Sheet，保存后重新读取详�
   await p.giftSheetSaved();
   assert.equal(p.data.gift.gift_name, '新照片书');
   assert.equal(h.url(), '');
+});
+test('原生匿名分享仅提交公开补充字段并打开案例详情', async () => {
+  const h = harness(), p = h.load('pages/case/form.js');
+  h.respond(async (route) => route === '/v1/gifts/g1' ? { ...gift, occasion: '生日', price_fen: 89900, note: '私人备注' } : route === '/v1/recipients/r1' ? { ...recipient, age_range: '26–30' } : { id: 'case-1' });
+  await p.onLoad({ gift_id: 'g1' });
+  assert.equal(p.data.form.price_range, '500–1000');
+  assert.equal(p.data.form.age_range, '26–30');
+  p.pick({ currentTarget: { dataset: { field: 'wanted_level', options: 'wanted' } }, detail: { value: 2 } });
+  p.input(input('behavior', '当天就用了'));
+  await p.save();
+  const submitted = h.calls.at(-1)[2];
+  assert.equal(h.calls.at(-1)[0], '/v1/cases');
+  assert.equal(submitted.source_gift_id, 'g1');
+  assert.equal(submitted.note, undefined);
+  assert.equal(submitted.display_name, undefined);
+  assert.equal(h.url(), '/pages/case/detail?id=case-1');
 });

@@ -6,7 +6,7 @@ const { randomUUID, randomBytes } = require('node:crypto');
 const { Pool } = require('pg');
 const { migrate } = require('../server/db');
 
-test('V0.1 records survive V0.1.1 migration with stable recipient order', async (t) => {
+test('V0.1 records survive V0.2 migration with stable recipient order', async (t) => {
   const connectionString = process.env.DATABASE_URL || 'postgresql://giftbook@127.0.0.1:55437/giftbook';
   const admin = new Pool({ connectionString });
   const schema = 'test_migration_' + randomBytes(8).toString('hex');
@@ -25,6 +25,7 @@ test('V0.1 records survive V0.1.1 migration with stable recipient order', async 
   await migrate(pool);
   assert.deepEqual((await pool.query('SELECT id FROM recipients WHERE user_id=$1 ORDER BY sort_order', [userId])).rows.map((row) => row.id), [newerId, olderId]);
   assert.equal((await pool.query('SELECT gift_name FROM gift_records WHERE id=$1', [giftId])).rows[0].gift_name, '拍立得');
+  assert.equal((await pool.query("SELECT to_regclass('public_cases') AS cases,to_regclass('case_helpful') AS helpful")).rows[0].cases, 'public_cases');
   await pool.query('UPDATE recipients SET sort_order=0 WHERE id=$1', [olderId]);
   await migrate(pool);
   assert.equal((await pool.query('SELECT sort_order FROM recipients WHERE id=$1', [olderId])).rows[0].sort_order, 0);

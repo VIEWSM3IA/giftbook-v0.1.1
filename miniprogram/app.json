@@ -1,6 +1,10 @@
 {
   "pages": [
     "pages/giftbook/index",
+    "pages/explore/index",
+    "pages/case/form",
+    "pages/case/detail",
+    "pages/case/mine",
     "pages/login/index",
     "pages/record/detail",
     "pages/me/index"
@@ -10,6 +14,15 @@
     "navigationBarBackgroundColor": "#F7F7F9",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#F7F7F9"
+  },
+  "tabBar": {
+    "color": "#6E6E73",
+    "selectedColor": "#111114",
+    "backgroundColor": "#F9F9FB",
+    "list": [
+      { "pagePath": "pages/giftbook/index", "text": "礼物簿" },
+      { "pagePath": "pages/explore/index", "text": "看看" }
+    ]
   },
   "sitemapLocation": "sitemap.json"
 }

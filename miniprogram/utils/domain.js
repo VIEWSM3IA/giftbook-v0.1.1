@@ -10,6 +10,8 @@ const RELATIONS = ['恋人', '配偶', '家人', '朋友', '同事', '领导', '
 const AGE_BUCKETS = ['≤17', '18–22', '23–25', '26–30', '31–35', '36–40', '41–50', '51–60', '60+'];
 const GENDERS = ['女', '男', '其他', '不记录'];
 const OCCASIONS = ['生日', '纪念日', '节日', '感谢', '日常', '其他'];
+const PRICE_RANGES = ['0–100', '100–300', '300–500', '500–1000', '1000–1500', '1500+'];
+const WANTED_LEVELS = ['明确想要', '暗示过', '没提过'];
 const TAGS = [
   '阅读',
   '音乐',
@@ -99,6 +101,25 @@ function validateGift(input) {
     note: text(input.note, '备注', 300)
   };
 }
+function priceRange(fen) {
+  if (fen == null) return '';
+  const yuan = fen / 100;
+  return yuan < 100 ? PRICE_RANGES[0] : yuan < 300 ? PRICE_RANGES[1] : yuan < 500 ? PRICE_RANGES[2] : yuan < 1000 ? PRICE_RANGES[3] : yuan < 1500 ? PRICE_RANGES[4] : PRICE_RANGES[5];
+}
+function validateCase(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('请补充分享信息');
+  if (!Number.isInteger(Number(input.reaction_level)) || Number(input.reaction_level) < 1 || Number(input.reaction_level) > 5) throw new Error('请选择 TA 的实际反应');
+  return {
+    relation_type: choice(input.relation_type, RELATIONS, '关系', true),
+    age_range: choice(input.age_range, AGE_BUCKETS, '年龄段', true),
+    occasion: choice(input.occasion, OCCASIONS, '场景', true),
+    price_range: choice(input.price_range, PRICE_RANGES, '价格区间', true),
+    wanted_level: choice(input.wanted_level, WANTED_LEVELS, '对方之前是否想要', true),
+    reaction_level: Number(input.reaction_level),
+    behavior: text(input.behavior, '行为证据', 80, true),
+    experience: text(input.experience, '一句经验', 120)
+  };
+}
 function formatPrice(fen) {
   return fen == null ? '' : (fen / 100).toFixed(2).replace(/\.00$/, '');
 }
@@ -128,11 +149,15 @@ const domain = {
   AGE_BUCKETS,
   GENDERS,
   OCCASIONS,
+  PRICE_RANGES,
+  WANTED_LEVELS,
   TAGS,
   today,
   reaction,
   validateRecipient,
   validateGift,
+  validateCase,
+  priceRange,
   parsePrice,
   formatPrice,
   formatDate,

@@ -72,3 +72,11 @@ test('时间日志同年只显示一次年份，跨年重新显示', () => {
   assert.equal(entries[1].log_reaction, '还不错');
   assert.equal(entries[2].log_meta, '纪念日 · ¥0');
 });
+test('匿名案例：必填公开字段和价格区间在三端一致', () => {
+  const value = { relation_type: '朋友', age_range: '26–30', occasion: '生日', price_range: '500–1000', wanted_level: '没提过', reaction_level: 4, behavior: ' 当天就用了 ', experience: '' };
+  assert.equal(d.validateCase(value).behavior, '当天就用了');
+  assert.equal(d.priceRange(89900), '500–1000');
+  assert.equal(d.priceRange(null), '');
+  for (const patch of [{ age_range: '' }, { price_range: '899' }, { wanted_level: '' }, { reaction_level: 0 }, { behavior: '' }, { behavior: '字'.repeat(81) }])
+    assert.throws(() => d.validateCase({ ...value, ...patch }));
+});

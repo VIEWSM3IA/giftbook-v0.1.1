@@ -34,6 +34,7 @@ Page({
       recipientName: this.data.person.display_name
     });
   },
+  share() { wx.navigateTo({ url: '/pages/case/form?gift_id=' + this.id }); },
   giftSheetSaved() { return this.load(); },
   async remove() {
     if (this.data.busy) return;
