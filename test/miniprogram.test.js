@@ -200,7 +200,7 @@ test('所有原生模板事件、已注册路由文件、范围均有效', () =>
       assert.equal(typeof definition[match[1]], 'function', `${file}: ${match[1]}`);
   }
   const config = JSON.parse(fs.readFileSync(path.join(mini, 'app.json')));
-  assert.equal(config.pages.length, 8);
+  assert.equal(config.pages.length, 7);
   assert.ok(config.pages.every((page) => !page.endsWith('/create')));
   assert.equal(config.subpackages, undefined);
   for (const page of config.pages)
@@ -444,20 +444,24 @@ test('礼物详情原地编辑：预填共用 Sheet，保存后重新读取详�
   await p.giftSheetSaved();
   assert.equal(p.data.gift.gift_name, '新照片书');
   assert.equal(h.url(), '');
+  p.caseShareSaved({ detail: { item: { id: 'case-1' } } });
+  assert.equal(p.data.gift.share_state, 'published');
+  assert.equal(p.data.gift.published_case_id, 'case-1');
+  assert.equal(h.url(), '/pages/case/detail?id=case-1');
 });
-test('原生匿名分享仅提交公开补充字段并打开案例详情', async () => {
-  const h = harness(), p = h.load('pages/case/form.js');
-  h.respond(async (route) => route === '/v1/gifts/g1' ? { ...gift, occasion: '生日', price_fen: 89900, note: '私人备注' } : route === '/v1/recipients/r1' ? { ...recipient, age_range: '26–30' } : { id: 'case-1' });
-  await p.onLoad({ gift_id: 'g1' });
-  assert.equal(p.data.form.price_range, '500–1000');
-  assert.equal(p.data.form.age_range, '26–30');
-  p.pick({ currentTarget: { dataset: { field: 'wanted_level', options: 'wanted' } }, detail: { value: 2 } });
-  p.input(input('behavior', '当天就用了'));
-  await p.save();
-  const submitted = h.calls.at(-1)[2];
-  assert.equal(h.calls.at(-1)[0], '/v1/cases');
+test('原生分享弹层只提交公开字段并发出保存事件', async () => {
+  const h = harness(), sheet = h.load('components/case-share-sheet/index.js');
+  h.respond(async (route) => route === '/v1/events' ? null : { id: 'case-1' });
+  sheet.open({ gift: { ...gift, occasion: '生日', price_fen: 89900, note: '私人备注' }, person: { ...recipient, age_range: '26–30' } });
+  assert.equal(sheet.data.form.price_range, '500–999');
+  sheet.pick({ currentTarget: { dataset: { field: 'wanted_level', options: 'wanted' } }, detail: { value: 2 } });
+  sheet.evidence({ currentTarget: { dataset: { code: 'used_immediately' } } });
+  await sheet.save();
+  const submitted = h.calls.find((call) => call[0] === '/v1/cases')[2];
   assert.equal(submitted.source_gift_id, 'g1');
+  assert.equal(submitted.gift_name, gift.gift_name);
+  assert.deepEqual(Array.from(submitted.behavior_evidence), ['used_immediately']);
   assert.equal(submitted.note, undefined);
   assert.equal(submitted.display_name, undefined);
-  assert.equal(h.url(), '/pages/case/detail?id=case-1');
+  assert.equal(sheet.lastEvent.detail.item.id, 'case-1');
 });

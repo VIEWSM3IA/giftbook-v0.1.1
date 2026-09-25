@@ -72,11 +72,12 @@ test('时间日志同年只显示一次年份，跨年重新显示', () => {
   assert.equal(entries[1].log_reaction, '还不错');
   assert.equal(entries[2].log_meta, '纪念日 · ¥0');
 });
-test('匿名案例：必填公开字段和价格区间在三端一致', () => {
-  const value = { relation_type: '朋友', age_range: '26–30', occasion: '生日', price_range: '500–1000', wanted_level: '没提过', reaction_level: 4, behavior: ' 当天就用了 ', experience: '' };
-  assert.equal(d.validateCase(value).behavior, '当天就用了');
-  assert.equal(d.priceRange(89900), '500–1000');
+test('匿名案例：公开礼物名、固定行为证据和不重叠价格区间', () => {
+  const value = { gift_name: '公开版礼物', relation_type: '朋友', age_range: '26–30', occasion: '生日', price_range: '500–999', wanted_level: '没提过', reaction_level: 4, behavior_evidence: ['used_immediately'], experience: '' };
+  assert.deepEqual(d.validateCase(value).behavior_evidence, ['used_immediately']);
+  assert.equal(d.evidenceLabels(value.behavior_evidence), '马上用了');
+  for (const [fen, label] of [[9999,'0–99'],[10000,'100–299'],[29999,'100–299'],[30000,'300–499'],[50000,'500–999'],[100000,'1000–1499'],[150000,'1500+']]) assert.equal(d.priceRange(fen), label);
   assert.equal(d.priceRange(null), '');
-  for (const patch of [{ age_range: '' }, { price_range: '899' }, { wanted_level: '' }, { reaction_level: 0 }, { behavior: '' }, { behavior: '字'.repeat(81) }])
+  for (const patch of [{ gift_name: '' }, { gift_name: '字'.repeat(61) }, { age_range: '' }, { price_range: '899' }, { wanted_level: '' }, { reaction_level: 0 }, { behavior_evidence: [] }, { behavior_evidence: ['legacy_observed'] }, { behavior_evidence: ['used_immediately','used_immediately'] }])
     assert.throws(() => d.validateCase({ ...value, ...patch }));
 });

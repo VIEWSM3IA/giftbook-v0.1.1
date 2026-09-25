@@ -8,7 +8,11 @@ Page({
     catch (error) { this.setData({ error: error.message }); }
     finally { this.setData({ loading: false }); }
   },
-  edit(e) { wx.navigateTo({ url: '/pages/case/form?case_id=' + e.currentTarget.dataset.id }); },
+  edit(e) {
+    const item = this.data.items.find((entry) => entry.id === e.currentTarget.dataset.id && entry.status === 'published');
+    if (item) this.selectComponent('#case-share-sheet').open({ caseItem: item, entry: 'my_shares' });
+  },
+  caseShareSaved() { return this.load(); },
   open(e) { wx.navigateTo({ url: '/pages/case/detail?id=' + e.currentTarget.dataset.id }); },
   async remove(e) {
     const confirmed = await new Promise((resolve) => wx.showModal({ title: '下架这条分享？', content: '公开案例会消失，私人礼物记录仍会保留。', success: (r) => resolve(r.confirm), fail: () => resolve(false) }));

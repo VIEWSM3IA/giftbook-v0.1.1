@@ -1,1 +1,1 @@
-{"navigationBarTitleText":"礼物详情","usingComponents":{"gift-sheet":"../../components/gift-sheet/index"}}
+{"navigationBarTitleText":"礼物详情","usingComponents":{"gift-sheet":"../../components/gift-sheet/index","case-share-sheet":"../../components/case-share-sheet/index"}}

@@ -75,7 +75,7 @@ async function recipient(db, userId, id, lock = false) {
 }
 async function gift(db, userId, id) {
   const row = (
-    await db.query('SELECT * FROM gift_records WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL', [
+    await db.query("SELECT g.*,c.id AS published_case_id,CASE WHEN c.id IS NULL THEN 'none' ELSE 'published' END AS share_state FROM gift_records g LEFT JOIN public_cases c ON c.source_gift_id=g.id AND c.status='published' WHERE g.id=$1 AND g.user_id=$2 AND g.deleted_at IS NULL", [
       uuid(id),
       userId
     ])
@@ -83,9 +83,9 @@ async function gift(db, userId, id) {
   if (!row) missing();
   return row;
 }
-const caseFields = 'id,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior,experience,helpful_count,created_at,updated_at';
-function reviewCase(value, giftName, recipientName) {
-  const publicText = [giftName, value.behavior, value.experience].join(' ').normalize('NFKC');
+const caseFields = 'id,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,helpful_count,created_at,updated_at';
+function reviewCase(value, recipientName) {
+  const publicText = [value.gift_name, value.experience].join(' ').normalize('NFKC');
   const compact = publicText.replace(/[\s\p{P}\p{S}\p{Cf}]/gu, '').toLowerCase();
   const privateName = (recipientName || '').normalize('NFKC').replace(/[\s\p{P}\p{S}\p{Cf}]/gu, '').toLowerCase();
   if (/[\w.+-]+@[\w.-]+\.[a-z]{2,}|@\w{2,}|https?:\/\/|www\./i.test(publicText) ||
@@ -151,7 +151,25 @@ const eventRules = {
         ['gift_name', 'reaction_level', 'gifted_at', 'occasion', 'price_fen', 'note'].includes(item)
       )
   },
-  gift_deleted: {}
+  gift_deleted: {},
+  case_share_started: { entry: (value) => ['gift_detail', 'gift_menu', 'my_shares'].includes(value), edit: (value) => typeof value === 'boolean' },
+  case_published: {
+    relation_type: (value) => domain.RELATIONS.includes(value),
+    age_range: (value) => domain.AGE_BUCKETS.includes(value),
+    occasion: (value) => domain.OCCASIONS.includes(value),
+    price_range: (value) => domain.PRICE_RANGES.includes(value),
+    wanted_level: (value) => domain.WANTED_LEVELS.includes(value),
+    reaction_level: (value) => Number.isInteger(value) && value >= 1 && value <= 5,
+    evidence_count: (value) => Number.isInteger(value) && value >= 1 && value <= 5
+  },
+  case_opened: { is_mine: (value) => typeof value === 'boolean' },
+  case_filter_changed: {
+    field: (value) => ['relation_type', 'age_range', 'occasion', 'price_range', 'wanted_level'].includes(value),
+    active: (value) => typeof value === 'boolean',
+    value: (value) => ['全部', ...domain.RELATIONS, ...domain.AGE_BUCKETS, ...domain.OCCASIONS, ...domain.PRICE_RANGES, ...domain.WANTED_LEVELS].includes(value)
+  },
+  case_helpful: { count_bucket: (value) => ['1', '2-5', '6-20', '21+'].includes(value) },
+  case_unpublished: { had_helpful: (value) => typeof value === 'boolean' }
 };
 function createApi(options = {}) {
   const pool = options.pool || defaultPool;
@@ -164,6 +182,13 @@ function createApi(options = {}) {
     const safe = {};
     for (const [key, value] of Object.entries(properties))
       if (Object.hasOwn(rules, key) && rules[key](value)) safe[key] = value;
+    if (event === 'case_filter_changed' && safe.value) {
+      const options = {
+        relation_type: domain.RELATIONS, age_range: domain.AGE_BUCKETS, occasion: domain.OCCASIONS,
+        price_range: domain.PRICE_RANGES, wanted_level: domain.WANTED_LEVELS
+      }[safe.field];
+      if (!options || (safe.value !== '全部' && !options.includes(safe.value)) || safe.active !== (safe.value !== '全部')) delete safe.value;
+    }
     log({ event, properties: safe });
   };
   async function login(input, provider) {
@@ -338,21 +363,22 @@ function createApi(options = {}) {
           )).rows;
           data = { items: rows.slice(0, 20), next_offset: rows.length > 20 ? offset + 20 : null };
         } else if (method === 'GET' && route === '/v1/me/cases') {
-          data = (await pool.query(`SELECT ${caseFields},status,source_gift_id FROM public_cases WHERE owner_id=$1 ORDER BY created_at DESC,id DESC`, [userId])).rows;
+          data = (await pool.query(`SELECT ${caseFields},status,source_gift_id,legacy_price_range FROM public_cases WHERE owner_id=$1 ORDER BY created_at DESC,id DESC`, [userId])).rows;
         } else if (method === 'POST' && route === '/v1/cases') {
           const giftId = uuid(input.source_gift_id);
           const value = validate(domain.validateCase, input);
           data = await transaction(pool, async (db) => {
             const source = (await db.query('SELECT g.*,r.display_name,r.deleted_at AS recipient_deleted_at FROM gift_records g JOIN recipients r ON r.id=g.recipient_id WHERE g.id=$1 AND g.user_id=$2 FOR UPDATE OF g', [giftId, userId])).rows[0];
             if (!source || source.deleted_at || source.recipient_deleted_at) missing();
-            reviewCase(value, source.gift_name, source.display_name);
+            reviewCase(value, source.display_name);
             if ((await db.query("SELECT 1 FROM public_cases WHERE source_gift_id=$1 AND status='published'", [giftId])).rowCount)
               fail(409, 'ALREADY_SHARED', '这份礼物已经分享过');
             const id = randomUUID();
-            const row = (await db.query(`INSERT INTO public_cases(id,owner_id,source_gift_id,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior,experience,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'published') ON CONFLICT(source_gift_id) WHERE status='published' DO NOTHING RETURNING ${caseFields},status,source_gift_id`, [id,userId,giftId,source.gift_name,value.relation_type,value.age_range,value.occasion,value.price_range,value.wanted_level,value.reaction_level,value.behavior,value.experience])).rows[0];
+            const row = (await db.query(`INSERT INTO public_cases(id,owner_id,source_gift_id,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'published') ON CONFLICT(source_gift_id) WHERE status='published' DO NOTHING RETURNING ${caseFields},status,source_gift_id`, [id,userId,giftId,value.gift_name,value.relation_type,value.age_range,value.occasion,value.price_range,value.wanted_level,value.reaction_level,value.behavior_evidence,value.experience])).rows[0];
             if (!row) fail(409, 'ALREADY_SHARED', '这份礼物已经分享过');
             return row;
           });
+          emit('case_published', { relation_type: value.relation_type, age_range: value.age_range, occasion: value.occasion, price_range: value.price_range, wanted_level: value.wanted_level, reaction_level: value.reaction_level, evidence_count: value.behavior_evidence.length });
         } else if (/^\/v1\/cases\/[^/]+\/helpful$/.test(route) && method === 'POST') {
           const id = uuid(route.split('/')[3]);
           data = await transaction(pool, async (db) => {
@@ -361,27 +387,31 @@ function createApi(options = {}) {
             if (item.owner_id === userId) fail(400, 'OWN_CASE', '不能给自己的分享点有帮助');
             const inserted = await db.query('INSERT INTO case_helpful(case_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [id,userId]);
             if (inserted.rowCount) await db.query('UPDATE public_cases SET helpful_count=helpful_count+1 WHERE id=$1', [id]);
-            return (await db.query('SELECT helpful_count FROM public_cases WHERE id=$1', [id])).rows[0];
+            return { ...(await db.query('SELECT helpful_count FROM public_cases WHERE id=$1', [id])).rows[0], added: inserted.rowCount > 0 };
           });
+          if (data.added) emit('case_helpful', { count_bucket: data.helpful_count === 1 ? '1' : data.helpful_count <= 5 ? '2-5' : data.helpful_count <= 20 ? '6-20' : '21+' });
+          delete data.added;
         } else if (/^\/v1\/cases\/[^/]+$/.test(route)) {
           const id = uuid(route.split('/')[3]);
           if (method === 'GET') {
             const row = (await pool.query(`SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},c.owner_id=$2 AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$2) AS helped FROM public_cases c WHERE c.id=$1 AND c.status='published'`, [id,userId])).rows[0];
             if (!row) missing();
             data = row;
+            emit('case_opened', { is_mine: row.is_mine });
           } else if (method === 'PATCH') {
             const value = validate(domain.validateCase, input);
             data = await transaction(pool, async (db) => {
               const old = (await db.query("SELECT * FROM public_cases WHERE id=$1 AND owner_id=$2 AND status='published' FOR UPDATE", [id,userId])).rows[0];
               if (!old) missing();
               const name = (await db.query('SELECT display_name FROM recipients r JOIN gift_records g ON g.recipient_id=r.id WHERE g.id=$1', [old.source_gift_id])).rows[0]?.display_name;
-              reviewCase(value, old.gift_name, name);
-              return (await db.query(`UPDATE public_cases SET relation_type=$1,age_range=$2,occasion=$3,price_range=$4,wanted_level=$5,reaction_level=$6,behavior=$7,experience=$8,updated_at=now() WHERE id=$9 RETURNING ${caseFields},status,source_gift_id`, [value.relation_type,value.age_range,value.occasion,value.price_range,value.wanted_level,value.reaction_level,value.behavior,value.experience,id])).rows[0];
+              reviewCase(value, name);
+              return (await db.query(`UPDATE public_cases SET gift_name=$1,relation_type=$2,age_range=$3,occasion=$4,price_range=$5,wanted_level=$6,reaction_level=$7,behavior_evidence=$8,experience=$9,legacy_price_range=NULL,updated_at=now() WHERE id=$10 RETURNING ${caseFields},status,source_gift_id`, [value.gift_name,value.relation_type,value.age_range,value.occasion,value.price_range,value.wanted_level,value.reaction_level,value.behavior_evidence,value.experience,id])).rows[0];
             });
           } else if (method === 'DELETE') {
-            const row = (await pool.query("UPDATE public_cases SET status='removed',updated_at=now() WHERE id=$1 AND owner_id=$2 AND status='published' RETURNING id", [id,userId])).rows[0];
+            const row = (await pool.query("UPDATE public_cases SET status='removed',updated_at=now() WHERE id=$1 AND owner_id=$2 AND status='published' RETURNING id,helpful_count", [id,userId])).rows[0];
             if (!row) missing();
             data = null;
+            emit('case_unpublished', { had_helpful: row.helpful_count > 0 });
           } else missing();
         } else if (method === 'GET' && route === '/v1/home')
           data = {
@@ -458,7 +488,7 @@ function createApi(options = {}) {
           }
           const rows = (
             await pool.query(
-              `SELECT *,created_at::text AS cursor_created_at FROM gift_records WHERE recipient_id=$1 AND user_id=$2 AND deleted_at IS NULL ${cursor ? 'AND (gifted_at,created_at,id)<($4::date,$5::timestamptz,$6::uuid)' : ''} ORDER BY gifted_at DESC,created_at DESC,id DESC LIMIT $3`,
+              `SELECT g.*,g.created_at::text AS cursor_created_at,c.id AS published_case_id,CASE WHEN c.id IS NULL THEN 'none' ELSE 'published' END AS share_state FROM gift_records g LEFT JOIN public_cases c ON c.source_gift_id=g.id AND c.status='published' WHERE g.recipient_id=$1 AND g.user_id=$2 AND g.deleted_at IS NULL ${cursor ? 'AND (g.gifted_at,g.created_at,g.id)<($4::date,$5::timestamptz,$6::uuid)' : ''} ORDER BY g.gifted_at DESC,g.created_at DESC,g.id DESC LIMIT $3`,
               [id, userId, limit + 1, ...(cursor || [])]
             )
           ).rows;

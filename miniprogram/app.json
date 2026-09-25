@@ -2,7 +2,6 @@
   "pages": [
     "pages/giftbook/index",
     "pages/explore/index",
-    "pages/case/form",
     "pages/case/detail",
     "pages/case/mine",
     "pages/login/index",

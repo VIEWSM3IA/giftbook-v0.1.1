@@ -16,6 +16,7 @@ Page({
     const selected = { ...this.data.selected };
     if (option === '全部') delete selected[field]; else selected[field] = option;
     this.setData({ selected, filters: filters.map((item) => ({ ...item, active: selected[item.field] || item.label })) });
+    store.request('/v1/events', 'POST', { event: 'case_filter_changed', properties: { field, active: option !== '全部', value: option } }).catch(() => {});
     this.load(true);
   },
   async load(reset = false) {
@@ -28,7 +29,7 @@ Page({
       const query = Object.entries(values).map(([key, value]) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
       const result = await store.request('/v1/cases?' + query);
       if (sequence !== this.sequence) return;
-      this.setData({ items: (reset ? [] : this.data.items).concat(result.items.map((item) => ({ ...item, reaction: D.reaction(item.reaction_level).label }))), nextOffset: result.next_offset });
+      this.setData({ items: (reset ? [] : this.data.items).concat(result.items.map((item) => ({ ...item, reaction: D.reaction(item.reaction_level).label, evidence_label: D.evidenceLabels(item.behavior_evidence) }))), nextOffset: result.next_offset });
     } catch (error) { if (sequence === this.sequence) this.setData({ error: error.message }); }
     finally { if (sequence === this.sequence) this.setData({ loading: false }); }
   },

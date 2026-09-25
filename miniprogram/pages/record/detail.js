@@ -34,7 +34,18 @@ Page({
       recipientName: this.data.person.display_name
     });
   },
-  share() { wx.navigateTo({ url: '/pages/case/form?gift_id=' + this.id }); },
+  share() {
+    const { gift, person } = this.data;
+    if (!gift || !person) return;
+    if (gift.share_state === 'published' && gift.published_case_id) {
+      wx.navigateTo({ url: '/pages/case/detail?id=' + gift.published_case_id });
+    } else this.selectComponent('#case-share-sheet').open({ gift, person, entry: 'gift_detail' });
+  },
+  caseShareSaved(e) {
+    const id = e.detail.item.id;
+    this.setData({ 'gift.share_state': 'published', 'gift.published_case_id': id });
+    wx.navigateTo({ url: '/pages/case/detail?id=' + id });
+  },
   giftSheetSaved() { return this.load(); },
   async remove() {
     if (this.data.busy) return;

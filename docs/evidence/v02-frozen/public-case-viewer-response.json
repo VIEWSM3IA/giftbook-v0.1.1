@@ -1,0 +1,20 @@
+{
+  "id": "9035a282-7a47-428c-9af7-946d5eec265a",
+  "gift_name": "公开版拍立得",
+  "relation_type": "恋人",
+  "age_range": "26–30",
+  "occasion": "生日",
+  "price_range": "500–999",
+  "wanted_level": "没提过",
+  "reaction_level": 4,
+  "behavior_evidence": [
+    "happy_on_receive",
+    "used_immediately"
+  ],
+  "experience": "先了解对方的使用习惯",
+  "helpful_count": 0,
+  "created_at": "2026-09-25T17:44:17.642Z",
+  "updated_at": "2026-09-25T17:44:17.642Z",
+  "is_mine": false,
+  "helped": false
+}

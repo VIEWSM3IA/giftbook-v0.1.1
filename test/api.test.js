@@ -239,25 +239,32 @@ test('PostgreSQL API: CRUD, ownership, concurrent idempotency, privacy and accou
   await request('GET', `/v1/recipients/${r.id}/gifts?limit=0`, null, a.token, 400);
   const caseInput = {
     source_gift_id: g.id, relation_type: '朋友', age_range: '26–30', occasion: '生日',
-    price_range: '100–300', wanted_level: '没提过', reaction_level: 5,
-    behavior: '当天就用了', experience: '先问清使用习惯'
+    price_range: '100–299', wanted_level: '没提过', reaction_level: 5,
+    gift_name: '公开相机', behavior_evidence: ['used_immediately'], experience: '先问清使用习惯'
   };
   await request('POST', '/v1/cases', caseInput, b.token, 404);
-  await request('POST', '/v1/cases', { ...caseInput, behavior: '微信号 abc123' }, a.token, 400);
-  for (const behavior of ['微 信：abc123', '微​信 abcd1234', 'QQ：123456789', '138-0012-3456', '@zhangsan', '北京市朝阳区某路1号', '上海市静安区南京西路100弄2栋301室'])
-    await request('POST', '/v1/cases', { ...caseInput, behavior }, a.token, 400);
+  await request('POST', '/v1/cases', { ...caseInput, gift_name: '微信号 abc123' }, a.token, 400);
+  for (const unsafeName of ['微 信：abc123', '微​信 abcd1234', 'QQ：123456789', '138-0012-3456', '@zhangsan', 'a@example.com', 'https://example.com', '北京市朝阳区某路1号', '上海市静安区南京西路100弄2栋301室', '虚构乙'])
+    await request('POST', '/v1/cases', { ...caseInput, gift_name: unsafeName }, a.token, 400);
+  for (const evidence of [[], ['legacy_observed'], ['used_immediately', 'used_immediately'], ['unknown']])
+    await request('POST', '/v1/cases', { ...caseInput, behavior_evidence: evidence }, a.token, 400);
   await request('POST', '/v1/cases', { ...caseInput, experience: '虚构乙很开心' }, a.token, 400);
   const shared = await request('POST', '/v1/cases', caseInput, a.token);
   assert.equal(shared.status, 'published');
   await request('POST', '/v1/cases', caseInput, a.token, 409);
   const publicCase = await request('GET', `/v1/cases/${shared.id}`, null, b.token);
-  assert.equal(publicCase.gift_name, g.gift_name);
+  assert.equal(publicCase.gift_name, '公开相机');
+  assert.deepEqual(publicCase.behavior_evidence, ['used_immediately']);
+  assert.equal(publicCase.behavior_legacy, undefined);
+  assert.equal((await request('GET', `/v1/gifts/${g.id}`, null, a.token)).share_state, 'published');
   assert.equal(publicCase.source_gift_id, undefined);
   assert.equal(publicCase.owner_id, undefined);
+  for (const privateField of ['recipient_id', 'display_name', 'recipient_note', 'gift_note', 'price_fen', 'tags', 'gender', 'behavior_legacy'])
+    assert.equal(publicCase[privateField], undefined);
   assert.equal(publicCase.is_mine, false);
   assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, a.token)).is_mine, true);
   assert.ok(!JSON.stringify(publicCase).includes('不可进入日志的备注'));
-  assert.equal((await request('GET', '/v1/cases?relation_type=朋友&price_range=100%E2%80%93300', null, b.token)).items.length, 1);
+  assert.equal((await request('GET', '/v1/cases?relation_type=朋友&price_range=100%E2%80%93299', null, b.token)).items.length, 1);
   assert.equal((await request('GET', '/v1/cases?relation_type=家人', null, b.token)).items.length, 0);
   await request('GET', '/v1/cases?relation_type=无效', null, b.token, 400);
   await request('POST', `/v1/cases/${shared.id}/helpful`, {}, a.token, 400);
@@ -272,10 +279,11 @@ test('PostgreSQL API: CRUD, ownership, concurrent idempotency, privacy and accou
   await request('DELETE', `/v1/cases/${shared.id}`, null, b.token, 404);
   await request('PATCH', `/v1/recipients/${r.id}`, { display_name: '改名', relation_type: '家人' }, a.token);
   assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).relation_type, '朋友');
-  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).gift_name, g.gift_name);
+  assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).gift_name, '公开相机');
   await request('PATCH', `/v1/cases/${shared.id}`, { ...caseInput, experience: '新的经验' }, a.token);
   assert.equal((await request('GET', `/v1/cases/${shared.id}`, null, b.token)).experience, '新的经验');
   await request('DELETE', `/v1/cases/${shared.id}`, null, a.token);
+  assert.equal((await request('GET', `/v1/gifts/${g.id}`, null, a.token)).share_state, 'none');
   await request('GET', `/v1/cases/${shared.id}`, null, b.token, 404);
   assert.equal((await request('GET', `/v1/gifts/${g.id}`, null, a.token)).id, g.id);
   const reshared = await request('POST', '/v1/cases', caseInput, a.token);
@@ -296,6 +304,10 @@ test('PostgreSQL API: CRUD, ownership, concurrent idempotency, privacy and accou
     a.token
   );
   await request('POST', '/v1/events', { event: 'constructor', properties: {} }, a.token, 400);
+  await request('POST', '/v1/events', { event: 'case_filter_changed', properties: { field: 'relation_type', active: true, value: '朋友', gift_name: 'SECRET_GIFT' } }, a.token);
+  assert.deepEqual(logs.at(-1), { event: 'case_filter_changed', properties: { field: 'relation_type', active: true, value: '朋友' } });
+  await request('POST', '/v1/events', { event: 'case_filter_changed', properties: { field: 'relation_type', active: true, value: '26–30' } }, a.token);
+  assert.deepEqual(logs.at(-1), { event: 'case_filter_changed', properties: { field: 'relation_type', active: true } });
   assert.ok(!JSON.stringify(logs).includes('不可进入日志'));
   assert.ok(!JSON.stringify(logs).includes('SECRET_'));
   assert.ok(!JSON.stringify(logs).includes(a.token));

@@ -40,20 +40,23 @@ npm run preview:h5 -- 43117
 
 - `miniprogram/utils/domain.js`：三端共用的字段校验、枚举、金额与日期规则。
 - `server/`：单体 API、短期会话、微信身份交换、私有资源授权。
-- `migrations/001_v01.sql`、`002_v011.sql`、`003_v02.sql`：保留原记录，并增加独立的公开案例快照与有帮助记录；迁移可重复执行。
+- `migrations/001_v01.sql` 至 `004_v02_frozen.sql`：保留原记录，并增加公开案例、结构化行为证据与历史字段；迁移可重复执行。
 - `h5/`：与原生端一致的功能，使用同源 API。
 - [V0.1.1 交付契约](docs/v011-contract.md)：首页结构、交互、持久化与回退。
 - [V0.2 交付契约](docs/v02-contract.md)：匿名分享、公开字段、审核、管理与数据边界。
 - [验收记录](docs/verification.md)：实际运行的检查及未验证边界。
+- [V0.2 收口报告](docs/v02-freeze-report.md)：本轮验证、证据及尚未完成的原生编译门禁。
 
 ```bash
-npm test
+npm ci
 npm run check
-# 先启动本地 H5；复用现有 Playwright，无需新增产品依赖
-PLAYWRIGHT_MODULE=/home/aj/.npm/_npx/e41f203b7505f1fb/node_modules/playwright-core npm run check:h5
+npm test
+# 另一个终端启动本地 H5，随后运行浏览器验收
+npm run preview:h5
+npm run check:h5
 ```
 
-API 测试在随机隔离的 PostgreSQL schema 内执行，完成后删除自身测试 schema；H5 测试创建独立浏览器账号并在结束时注销，不修改验收者账号。项目唯一新增运行依赖为 `pg`。
+API 测试在随机隔离的 PostgreSQL schema 内执行，完成后删除自身测试 schema；H5 测试创建独立浏览器账号并在结束时注销，不修改验收者账号。运行依赖为 `pg`，浏览器验收使用开发依赖 `playwright-core`。
 
 ## 数据与回退
 

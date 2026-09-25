@@ -158,14 +158,26 @@ Page({
     try { await store.request('/v1/gifts/' + id, 'DELETE'); this.setData({ swipeId: '' }); if (wx.vibrateShort) wx.vibrateShort({ type: 'light' }); await this.selectId(this.data.active.id); }
     catch (error) { this.setData({ logError: error.message }); }
   },
-  shareGift(e) { wx.navigateTo({ url: '/pages/case/form?gift_id=' + e.currentTarget.dataset.id }); },
+  shareGift(id) {
+    const gift = this.data.gifts.find((item) => item.id === id);
+    if (!gift) return;
+    if (gift.share_state === 'published' && gift.published_case_id) {
+      wx.navigateTo({ url: '/pages/case/detail?id=' + gift.published_case_id });
+    } else this.selectComponent('#case-share-sheet').open({ gift, person: this.data.active, entry: 'gift_menu' });
+  },
+  caseShareSaved(e) {
+    this.selectId(this.data.active.id);
+    wx.navigateTo({ url: '/pages/case/detail?id=' + e.detail.item.id });
+  },
   async giftActions(e) {
     this.suppressGiftTap = true;
     setTimeout(() => { this.suppressGiftTap = false; }, 500);
     const id = e.currentTarget.dataset.id;
-    const choice = await new Promise((resolve) => wx.showActionSheet({ itemList: ['查看记录', '匿名分享', '编辑记录', '删除记录'], success: (result) => resolve(result.tapIndex), fail: () => resolve(-1) }));
+    const gift = this.data.gifts.find((item) => item.id === id);
+    if (!gift) return;
+    const choice = await new Promise((resolve) => wx.showActionSheet({ itemList: ['查看记录', gift.share_state === 'published' ? '查看公开分享' : '匿名分享', '编辑记录', '删除记录'], success: (result) => resolve(result.tapIndex), fail: () => resolve(-1) }));
     if (choice === 0) { this.restoreScroll = this.scrollTop || 0; wx.navigateTo({ url: '/pages/record/detail?id=' + id }); }
-    if (choice === 1) this.shareGift({ currentTarget: { dataset: { id } } });
+    if (choice === 1) this.shareGift(id);
     if (choice === 2) await this.editGift({ currentTarget: { dataset: { id } } });
     if (choice === 3) await this.deleteGift({ currentTarget: { dataset: { id } } });
   },

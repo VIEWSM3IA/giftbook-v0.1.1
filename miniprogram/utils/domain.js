@@ -10,8 +10,15 @@ const RELATIONS = ['恋人', '配偶', '家人', '朋友', '同事', '领导', '
 const AGE_BUCKETS = ['≤17', '18–22', '23–25', '26–30', '31–35', '36–40', '41–50', '51–60', '60+'];
 const GENDERS = ['女', '男', '其他', '不记录'];
 const OCCASIONS = ['生日', '纪念日', '节日', '感谢', '日常', '其他'];
-const PRICE_RANGES = ['0–100', '100–300', '300–500', '500–1000', '1000–1500', '1500+'];
+const PRICE_RANGES = ['0–99', '100–299', '300–499', '500–999', '1000–1499', '1500+'];
 const WANTED_LEVELS = ['明确想要', '暗示过', '没提过'];
+const BEHAVIOR_EVIDENCE = [
+  { code: 'happy_on_receive', label: '当场很开心' },
+  { code: 'used_immediately', label: '马上用了' },
+  { code: 'used_repeatedly', label: '后来经常用' },
+  { code: 'mentioned_later', label: '后来主动提起过' },
+  { code: 'shared_with_others', label: '分享给别人' }
+];
 const TAGS = [
   '阅读',
   '音乐',
@@ -109,16 +116,24 @@ function priceRange(fen) {
 function validateCase(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('请补充分享信息');
   if (!Number.isInteger(Number(input.reaction_level)) || Number(input.reaction_level) < 1 || Number(input.reaction_level) > 5) throw new Error('请选择 TA 的实际反应');
+  const evidence = input.behavior_evidence;
+  if (!Array.isArray(evidence) || evidence.length < 1 || evidence.length > 5 ||
+      new Set(evidence).size !== evidence.length || evidence.some((code) => !BEHAVIOR_EVIDENCE.some((item) => item.code === code)))
+    throw new Error('请至少选择一项实际发生的行为');
   return {
+    gift_name: text(input.gift_name, '公开礼物名称', 60, true),
     relation_type: choice(input.relation_type, RELATIONS, '关系', true),
     age_range: choice(input.age_range, AGE_BUCKETS, '年龄段', true),
     occasion: choice(input.occasion, OCCASIONS, '场景', true),
     price_range: choice(input.price_range, PRICE_RANGES, '价格区间', true),
     wanted_level: choice(input.wanted_level, WANTED_LEVELS, '对方之前是否想要', true),
     reaction_level: Number(input.reaction_level),
-    behavior: text(input.behavior, '行为证据', 80, true),
+    behavior_evidence: evidence,
     experience: text(input.experience, '一句经验', 120)
   };
+}
+function evidenceLabels(codes) {
+  return (codes || []).map((code) => BEHAVIOR_EVIDENCE.find((item) => item.code === code)?.label || (code === 'legacy_observed' ? '其他明确行为' : '')).filter(Boolean).join(' · ');
 }
 function formatPrice(fen) {
   return fen == null ? '' : (fen / 100).toFixed(2).replace(/\.00$/, '');
@@ -151,12 +166,14 @@ const domain = {
   OCCASIONS,
   PRICE_RANGES,
   WANTED_LEVELS,
+  BEHAVIOR_EVIDENCE,
   TAGS,
   today,
   reaction,
   validateRecipient,
   validateGift,
   validateCase,
+  evidenceLabels,
   priceRange,
   parsePrice,
   formatPrice,
