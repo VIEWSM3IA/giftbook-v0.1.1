@@ -28,7 +28,7 @@
 
 ## 发布门禁
 
-- GitHub Actions：待远端提交后确认绿色状态。
+- GitHub Actions：[Verify 工作流](https://github.com/VIEWSM3IA/giftbook-v0.1.1/actions/workflows/verify.yml) 已通过 `b04eae0` 的 `check`、`test` 与 `check:h5`；工作流页面显示最新提交的状态。
 - 微信开发者工具导入、编译和原生分享 Sheet 截图：当前 Linux 环境没有微信开发者工具，尚未执行。`project.config.json` 使用 `touristappid`。
 - 真实微信授权、iOS/Android 真机触控：待真实 AppID 与设备环境验收。
 - 已知 P0/P1 源码缺陷：0。未完成的原生编译门禁阻止 **FROZEN** 宣告。
