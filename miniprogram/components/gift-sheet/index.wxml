@@ -1,0 +1,17 @@
+<view wx:if="{{visible}}" class="sheet-layer">
+  <view class="sheet-backdrop" bindtap="close"></view>
+  <view class="sheet {{full ? 'full' : ''}}" style="padding-top:{{full ? statusTop : 0}}px">
+    <button class="sheet-handle" bindtap="toggleFull" aria-label="展开或收起表单"><view></view></button>
+    <view class="sheet-heading"><view><text class="sheet-kicker">给 {{recipientName}}</text><view class="sheet-title">{{editId ? '编辑礼物' : '记一份礼物'}}</view></view><button class="sheet-close" bindtap="close" aria-label="关闭">×</button></view>
+    <scroll-view scroll-y class="sheet-fields">
+      <view class="sheet-field"><text class="field-label">礼物</text><input placeholder="送了什么？" value="{{form.gift_name}}" data-field="gift_name" bindinput="input" maxlength="60"/></view>
+      <view class="field-label reaction-label">TA 的反应</view>
+      <scroll-view scroll-x class="reaction-scroll"><view class="reaction-options"><button wx:for="{{reactions}}" wx:key="value" class="reaction-option {{form.reaction_level === item.value ? 'selected' : ''}}" data-value="{{item.value}}" bindtap="reaction">{{item.label}}</button></view></scroll-view>
+      <picker class="sheet-row" mode="date" end="{{today}}" value="{{form.gifted_at}}" data-field="gifted_at" bindchange="input"><text>日期</text><text>{{form.gifted_at}} ›</text></picker>
+      <button class="sheet-row expand-row" bindtap="toggleExpanded"><text>再记一点</text><text>{{expanded ? '收起' : '›'}}</text></button>
+      <view wx:if="{{expanded}}"><picker class="sheet-row" range="{{occasions}}" bindchange="occasion"><text>场景</text><text>{{form.occasion || '选填'}} ›</text></picker><view class="sheet-field"><text class="field-label">价格 · 元</text><input type="digit" placeholder="选填" value="{{price}}" bindinput="priceInput" maxlength="12"/></view><view class="sheet-field"><text class="field-label">备注</text><textarea placeholder="TA 收到时说了什么？" value="{{form.note}}" data-field="note" bindinput="input" maxlength="300"/></view></view>
+      <view wx:if="{{error}}" class="sheet-error" role="alert">{{error}}</view>
+    </scroll-view>
+    <button class="sheet-save" bindtap="save" loading="{{busy}}" disabled="{{busy}}">{{editId ? '保存修改' : '记下来'}}</button>
+  </view>
+</view>

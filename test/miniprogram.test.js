@@ -10,7 +10,8 @@ function harness() {
   let url = '',
     scroll = '',
     confirmation = true,
-    handler = async () => null;
+    handler = async () => null,
+    component = null;
   const calls = [];
   const store = {
     requireSession: () => true,
@@ -40,7 +41,9 @@ function harness() {
     },
     reLaunch(o) {
       url = o.url;
-    }
+    },
+    getSystemInfoSync: () => ({ statusBarHeight: 20 }),
+    vibrateShort() {}
   };
   function load(file) {
     let definition;
@@ -50,6 +53,7 @@ function harness() {
       fs.readFileSync(filename, 'utf8'),
       {
         Page: (v) => (definition = v),
+        Component: (v) => (definition = v),
         require: (name) => (name.endsWith('/utils/store') ? store : localRequire(name)),
         wx,
         setTimeout,
@@ -59,7 +63,10 @@ function harness() {
     );
     return {
       ...definition,
+      ...definition.methods,
       data: structuredClone(definition.data),
+      selectComponent: () => component,
+      triggerEvent(name, detail) { this.lastEvent = { name, detail }; },
       setData(values, callback) {
         for (const [name, value] of Object.entries(values)) {
           const keys = name.split('.');
@@ -75,6 +82,7 @@ function harness() {
     load,
     calls,
     store,
+    setComponent(value) { component = value; },
     url: () => url,
     scroll: () => scroll,
     respond(fn) {
@@ -105,56 +113,46 @@ const gift = {
   price_fen: null,
   note: ''
 };
-test('原生 TA：必填校验、保存失败保留输入、成功跳转', async () => {
-  const h = harness(),
-    p = h.load('pages/recipient/create.js');
-  await p.onLoad({});
-  await p.save();
-  assert.match(p.data.error, /称呼/);
+test('原生 TA Sheet：校验、保存失败保留输入、成功刷新首页', async () => {
+  const h = harness(), p = h.load('pages/giftbook/index.js');
+  p.create();
+  await p.saveSheet();
+  assert.match(p.data.sheetError, /称呼/);
   assert.equal(h.calls.length, 0);
-  p.input(input('display_name', '小林'));
-  p.pick({
-    currentTarget: { dataset: { field: 'relation_type', options: 'relations' } },
-    detail: { value: domain.RELATIONS.indexOf('朋友') }
-  });
-  h.respond(async () => {
-    throw new Error('网络中断');
-  });
-  await p.save();
-  assert.equal(p.data.form.display_name, '小林');
-  assert.equal(p.data.error, '网络中断');
-  assert.equal(p.data.busy, false);
-  h.respond(async () => recipient);
-  await p.save();
-  assert.equal(h.url(), '/pages/giftbook/index?recipient_id=r1');
+  p.sheetInput({ currentTarget: { dataset: { form: 'personForm', field: 'display_name' } }, detail: { value: '小林' } });
+  p.sheetPick({ currentTarget: { dataset: { form: 'personForm', field: 'relation_type', options: 'relations' } }, detail: { value: domain.RELATIONS.indexOf('朋友') } });
+  h.respond(async () => { throw new Error('网络中断'); });
+  await p.saveSheet();
+  assert.equal(p.data.personForm.display_name, '小林');
+  assert.equal(p.data.sheetError, '网络中断');
+  h.respond(async (path) => path === '/v1/me' ? { user: { display_name: '我' } } : path === '/v1/recipients' ? [recipient] : path.endsWith('/gifts') ? { items: [], next_cursor: null } : recipient);
+  await p.saveSheet();
+  assert.equal(p.data.active.id, 'r1');
+  assert.equal(p.data.sheet, '');
 });
-test('原生记录：没有默认反应、金额转分、失败重试幂等、编辑', async () => {
-  const h = harness();
-  h.respond(async () => recipient);
-  let p = h.load('pages/record/create.js');
-  await p.onLoad({ recipient_id: 'r1' });
-  assert.equal(p.data.form.reaction_level, null);
-  p.input(input('gift_name', '照片书'));
-  await p.save();
-  assert.match(p.data.error, /反应/);
-  p.selectReaction({ currentTarget: { dataset: { value: 4 } } });
-  p.priceInput({ detail: { value: '19.90' } });
-  h.respond(async () => {
-    throw new Error('连接失败');
-  });
-  await p.save();
+test('共用 Gift Sheet：新建无默认反应、失败重试幂等、编辑 PATCH', async () => {
+  const h = harness(), sheet = h.load('components/gift-sheet/index.js');
+  sheet.open({ recipientId: 'r1', recipientName: '小林' });
+  assert.equal(sheet.data.form.reaction_level, null);
+  sheet.input(input('gift_name', '照片书'));
+  await sheet.save();
+  assert.match(sheet.data.error, /反应/);
+  sheet.reaction({ currentTarget: { dataset: { value: 4 } } });
+  sheet.priceInput({ detail: { value: '19.90' } });
+  h.respond(async () => { throw new Error('连接失败'); });
+  await sheet.save();
   const first = h.calls.at(-1);
   assert.equal(first[2].price_fen, 1990);
-  assert.equal(p.data.form.gift_name, '照片书');
+  assert.equal(sheet.data.form.gift_name, '照片书');
   h.respond(async () => gift);
-  await p.save();
+  await sheet.save();
   assert.equal(h.calls.at(-1)[2].request_id, first[2].request_id);
-  assert.equal(h.url(), '/pages/giftbook/index?recipient_id=r1');
-  h.respond(async (path) => (path.startsWith('/v1/gifts') ? gift : recipient));
-  p = h.load('pages/record/create.js');
-  await p.onLoad({ id: 'g1' });
-  p.input(input('note', '后来一直在用'));
-  await p.save();
+  assert.equal(sheet.lastEvent.name, 'saved');
+  assert.equal(sheet.data.visible, false);
+  sheet.open({ recipientId: 'r1', recipientName: '小林', gift });
+  assert.equal(sheet.data.form.gift_name, '照片书');
+  sheet.input(input('note', '后来一直在用'));
+  await sheet.save();
   assert.equal(h.calls.at(-1)[1], 'PATCH');
   assert.equal(h.calls.at(-1)[2].note, '后来一直在用');
 });
@@ -176,17 +174,15 @@ test('首页日志分页去重、删除确认和退出保留数据', async () =>
   assert.deepEqual(h.calls.at(-1), ['clear']);
   assert.equal(h.url(), '/pages/login/index');
 });
-test('原生保存中阻止重复提交', async () => {
-  const h = harness(),
-    p = h.load('pages/recipient/create.js');
-  await p.onLoad({});
-  p.setData({ form: recipient });
+test('共用 Gift Sheet 保存中阻止重复提交', async () => {
+  const h = harness(), sheet = h.load('components/gift-sheet/index.js');
+  sheet.open({ recipientId: 'r1', recipientName: '小林', gift });
   let resolve;
   h.respond(() => new Promise((r) => (resolve = r)));
-  const first = p.save();
-  await p.save();
+  const first = sheet.save();
+  await sheet.save();
   assert.equal(h.calls.length, 1);
-  resolve(recipient);
+  resolve(gift);
   await first;
 });
 test('所有原生模板事件、已注册路由文件、范围均有效', () => {
@@ -204,7 +200,8 @@ test('所有原生模板事件、已注册路由文件、范围均有效', () =>
       assert.equal(typeof definition[match[1]], 'function', `${file}: ${match[1]}`);
   }
   const config = JSON.parse(fs.readFileSync(path.join(mini, 'app.json')));
-  assert.equal(config.pages.length, 6);
+  assert.equal(config.pages.length, 4);
+  assert.ok(config.pages.every((page) => !page.endsWith('/create')));
   assert.equal(config.subpackages, undefined);
   for (const page of config.pages)
     for (const ext of ['js', 'json', 'wxml', 'wxss'])
@@ -240,19 +237,6 @@ test('wx.request 会话 header、真实微信 code 交换与 401 清理', async 
   assert.equal(session, '');
   assert.equal(route, '/pages/login/index');
 });
-test('资料加载失败时禁止用空表单覆盖已有 TA', async () => {
-  const h = harness();
-  h.respond(async () => {
-    throw new Error('暂时无法加载');
-  });
-  const p = h.load('pages/recipient/create.js');
-  await p.onLoad({ id: 'r1' });
-  p.input(input('display_name', '小林'));
-  p.setData({ 'form.relation_type': '朋友' });
-  await p.save();
-  assert.equal(h.calls.length, 1);
-  assert.equal(p.data.ready, false);
-});
 test('微信登录交换失败保持未登录并展示重试提示', async () => {
   const h = harness();
   h.respond(async () => {
@@ -264,15 +248,25 @@ test('微信登录交换失败保持未登录并展示重试提示', async () =>
   assert.equal(p.data.busy, false);
   assert.equal(h.url(), '');
 });
+test('原生登录只有品牌、短说明、登录和隐私入口', () => {
+  const source = fs.readFileSync(path.join(mini, 'pages/login/index.wxml'), 'utf8');
+  assert.match(source, /礼物簿/);
+  assert.match(source, /记录送给重要的人什么。/);
+  assert.equal((source.match(/bindtap="login"/g) || []).length, 1);
+  assert.equal((source.match(/bindtap="privacy"/g) || []).length, 1);
+  assert.doesNotMatch(source, /<image|<svg|book-art|welcome-visual|送过的礼物，|记得的人/);
+});
 test('礼物簿是唯一主空间，新增礼物在当前 TA 的 Sheet 中', async () => {
   const h = harness();
   const p = h.load('pages/giftbook/index.js');
   p.setData({ active: recipient });
+  const sheet = h.load('components/gift-sheet/index.js');
+  h.setComponent(sheet);
   p.add();
-  assert.equal(p.data.sheet, 'gift');
-  assert.equal(p.data.giftForm.reaction_level, null);
+  assert.equal(sheet.data.visible, true);
+  assert.equal(sheet.data.form.reaction_level, null);
   assert.equal(h.url(), '');
-  p.closeSheet();
+  sheet.close();
   p.create();
   assert.equal(p.data.sheet, 'person');
   const config = JSON.parse(fs.readFileSync(path.join(mini, 'app.json')));
@@ -291,6 +285,8 @@ test('首页 TA 与礼物编辑使用 Sheet，保留数据并发送 PATCH', asyn
     return {};
   });
   const p = h.load('pages/giftbook/index.js');
+  const sheet = h.load('components/gift-sheet/index.js');
+  h.setComponent(sheet);
   p.setData({ active: recipient, recipients: [recipient] });
   p.edit();
   assert.equal(p.data.sheetEditId, 'r1');
@@ -298,22 +294,22 @@ test('首页 TA 与礼物编辑使用 Sheet，保留数据并发送 PATCH', asyn
   await p.saveSheet();
   assert.ok(h.calls.some((c) => c[0] === '/v1/recipients/r1' && c[1] === 'PATCH'));
   await p.editGift({ currentTarget: { dataset: { id: 'g1' } } });
-  assert.equal(p.data.sheetEditId, 'g1');
-  assert.equal(p.data.giftForm.gift_name, '照片书');
-  await p.saveSheet();
+  assert.equal(sheet.data.editId, 'g1');
+  assert.equal(sheet.data.form.gift_name, '照片书');
+  await sheet.save();
   assert.ok(h.calls.some((c) => c[0] === '/v1/gifts/g1' && c[1] === 'PATCH'));
 });
 test('原生称呼和礼物名按 Unicode 字符校验，不截断表情符号', async () => {
-  const h = harness();
+  const h = harness(), p = h.load('pages/giftbook/index.js');
+  p.create();
+  p.setData({ personForm: { ...recipient, display_name: '🎁'.repeat(20) } });
   h.respond(async () => recipient);
-  const p = h.load('pages/recipient/create.js');
-  await p.onLoad({});
-  p.setData({ form: { ...recipient, display_name: '🎁'.repeat(20) } });
-  await p.save();
-  assert.equal(h.calls.at(-1)[2].display_name, '🎁'.repeat(20));
-  p.setData({ 'form.display_name': '🎁'.repeat(21) });
-  await p.save();
-  assert.match(p.data.error, /20/);
+  await p.saveSheet();
+  assert.equal(h.calls.find((call) => call[1] === 'POST')[2].display_name, '🎁'.repeat(20));
+  p.create();
+  p.setData({ 'personForm.display_name': '🎁'.repeat(21) });
+  await p.saveSheet();
+  assert.match(p.data.sheetError, /20/);
 });
 test('首页读取上次停留的 TA、日志并支持切换和排序', async () => {
   const h = harness();
@@ -332,8 +328,10 @@ test('首页读取上次停留的 TA、日志并支持切换和排序', async ()
   await p.selectId('r1');
   assert.equal(p.data.gifts[0].log_reaction, '很喜欢');
   assert.ok(h.calls.some((c) => c[0] === '/v1/me/active-recipient'));
+  const sheet = h.load('components/gift-sheet/index.js');
+  h.setComponent(sheet);
   p.add();
-  assert.equal(p.data.sheet, 'gift');
+  assert.equal(sheet.data.visible, true);
   p.setData({ sortingId: 'r2', targetId: 'r1' });
   await p.dragEnd();
   assert.deepEqual(p.data.recipients.map((person) => person.id), ['r2', 'r1']);
@@ -412,24 +410,38 @@ test('我的昵称：Unicode长度校验、取消、网络失败保留草稿和�
   assert.equal(p.data.user.display_name, '🎁'.repeat(20));
 });
 test('可选年龄、性别、场景已填写后可重新清空', async () => {
-  const h = harness(),
-    p = h.load('pages/recipient/create.js');
-  await p.onLoad({});
-  p.setData({ form: { ...recipient, age_range: domain.AGE_BUCKETS[1], gender: '女' } });
-  for (const [field, options] of [
-    ['age_range', 'ages'],
-    ['gender', 'genders']
-  ])
-    p.pick({ currentTarget: { dataset: { field, options } }, detail: { value: 0 } });
-  h.respond(async () => recipient);
-  await p.save();
-  assert.equal(h.calls.at(-1)[2].age_range, '');
-  assert.equal(h.calls.at(-1)[2].gender, '');
-  const g = h.load('pages/record/create.js');
-  await g.onLoad({ recipient_id: 'r1' });
-  g.setData({ form: { ...gift, occasion: '生日' } });
-  g.occasion({ detail: { value: 0 } });
+  const h = harness(), p = h.load('pages/giftbook/index.js');
+  p.create();
+  p.setData({ personForm: { ...recipient, age_range: domain.AGE_BUCKETS[1], gender: '女' } });
+  for (const [field, options] of [['age_range', 'ages'], ['gender', 'genders']])
+    p.sheetPick({ currentTarget: { dataset: { form: 'personForm', field, options } }, detail: { value: 0 } });
+  h.respond(async (path) => path === '/v1/me' ? { user: { display_name: '我' } } : path === '/v1/recipients' ? [recipient] : path.endsWith('/gifts') ? { items: [], next_cursor: null } : recipient);
+  await p.saveSheet();
+  assert.equal(h.calls[0][2].age_range, '');
+  assert.equal(h.calls[0][2].gender, '');
+  const sheet = h.load('components/gift-sheet/index.js');
+  sheet.open({ recipientId: 'r1', recipientName: '小林', gift: { ...gift, occasion: '生日' } });
+  sheet.occasion({ detail: { value: 0 } });
   h.respond(async () => gift);
-  await g.save();
+  await sheet.save();
   assert.equal(h.calls.at(-1)[2].occasion, '');
+});
+test('礼物详情原地编辑：预填共用 Sheet，保存后重新读取详情', async () => {
+  const h = harness(), p = h.load('pages/record/detail.js');
+  const sheet = h.load('components/gift-sheet/index.js');
+  h.setComponent(sheet);
+  h.respond(async (path) => path === '/v1/gifts/g1' ? gift : path === '/v1/recipients/r1' ? recipient : gift);
+  p.onLoad({ id: 'g1' });
+  await p.onShow();
+  p.edit();
+  assert.equal(h.url(), '');
+  assert.equal(sheet.data.editId, 'g1');
+  assert.equal(sheet.data.form.gift_name, '照片书');
+  sheet.input(input('gift_name', '新照片书'));
+  await sheet.save();
+  assert.equal(h.calls.at(-1)[1], 'PATCH');
+  h.respond(async (path) => path === '/v1/gifts/g1' ? { ...gift, gift_name: '新照片书' } : recipient);
+  await p.giftSheetSaved();
+  assert.equal(p.data.gift.gift_name, '新照片书');
+  assert.equal(h.url(), '');
 });

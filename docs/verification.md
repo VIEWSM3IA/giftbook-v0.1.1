@@ -1,3 +1,16 @@
+# V0.1.1 Final Polish 验收 · 2026-09-25
+
+按最终优化包收口：原生与 H5 登录页只保留品牌、短说明、登录和隐私入口；原生首页与详情共用 Gift Sheet，详情页编辑在原页预填、PATCH 后刷新；H5 详情页同路由打开复用字段的 Gift Sheet。删除两个无入口的原生 create 页面及旧样式，原生主包剩 4 个页面。业务校验继续共用 `miniprogram/utils/domain.js`，数据库和 API 未改动。
+
+- `npm run check`：4 个原生注册页面及组件文件、JS/JSON 语法、旧样式与旧路由检查通过。
+- `npm test`：26 项通过，包括原数据迁移、TA/礼物 CRUD、原生登录结构、Gift Sheet 预填和 PATCH、详情原地刷新。
+- `npm run check:h5`：本地与固定公网入口的移动浏览器完整流程通过。登录、详情编辑 Sheet 与主页在 320/390/430px 无横向溢出，浏览器无 pageerror；测试账号已注销。截图在 `/tmp/giftbook-v011-final-polish/` 和 `/tmp/giftbook-v011-final-public/`。
+- 原生结构与逻辑已验证；微信开发者工具编译、真实微信授权和 iOS/Android 真机触控仍需有 AppID 的设备验收。
+
+**V0.1.1 源码冻结**；后续产品功能进入 V0.2。
+
+---
+
 # V0.1.1 Native Mobile 优化验收 · 2026-09-25
 
 本轮按附件优化移动端交互。保留原数据模型与 V0.1.1 API；首页切换 TA 不再等待保存上次 TA 的请求。长按排序靠边自动滚动；原生与 H5 的新增流程改为 Sheet，主页改为中性底色、紧凑导航与扁平日志。礼物行支持左滑编辑/删除，旧的无入口路由已移除。

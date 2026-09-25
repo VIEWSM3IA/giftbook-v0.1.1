@@ -27,8 +27,14 @@ Page({
     }
   },
   edit() {
-    wx.navigateTo({ url: '/pages/record/create?id=' + this.id });
+    if (!this.data.gift || !this.data.person) return;
+    this.selectComponent('#gift-sheet').open({
+      gift: this.data.gift,
+      recipientId: this.data.gift.recipient_id,
+      recipientName: this.data.person.display_name
+    });
   },
+  giftSheetSaved() { return this.load(); },
   async remove() {
     if (this.data.busy) return;
     if (!(await store.confirm('删除这份记录？', '删除后无法恢复，TA 的其他记录不受影响。'))) return;

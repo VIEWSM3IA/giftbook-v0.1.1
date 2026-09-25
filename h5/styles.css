@@ -17,7 +17,6 @@ svg{display:block;flex:none}
 #app{min-height:100dvh;padding:0 20px calc(108px + env(safe-area-inset-bottom));overflow-wrap:anywhere}
 .primary{min-height:48px;width:100%;border-radius:15px;background:var(--accent);color:#fff;font-weight:650}
 .secondary{min-height:48px;width:100%;border-radius:15px;background:var(--soft);color:var(--accent)}
-.subtle{color:var(--secondary);font-size:12px}
 .danger-button{display:block;min-height:48px;color:var(--danger);margin:28px auto 0;font-size:14px}
 .error{color:var(--danger);font-size:13px;line-height:1.5;margin:10px 0}
 .error:empty{display:none}
@@ -28,15 +27,6 @@ svg{display:block;flex:none}
 .back .icon{width:19px}
 .brand{display:flex;align-items:center;gap:7px;color:var(--accent);font-size:14px;font-weight:650}
 .brand .icon{width:20px}
-.welcome{min-height:calc(100dvh - 90px);display:flex;flex-direction:column;padding-top:max(25px,env(safe-area-inset-top))}
-.welcome .brand{font-size:14px}
-.welcome-visual{display:grid;place-items:center;flex:1;min-height:185px;max-height:310px}
-.book-art{width:170px;height:180px}
-.welcome h1{font-size:34px}
-.welcome .tagline{margin-top:15px;color:var(--secondary);font-size:15px}
-.welcome-bottom{margin-top:auto;padding-top:35px}
-.welcome-bottom p{margin-top:15px;text-align:center;color:var(--secondary);font-size:12px}
-.welcome-bottom .privacy-link{color:var(--accent);font-size:12px}
 .book-header{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:44px 1fr 44px;align-items:center;height:calc(48px + env(safe-area-inset-top));margin:0 -20px;padding:env(safe-area-inset-top) 16px 0;background:rgba(249,249,251,.96)}
 .book-header h1{text-align:center;font-size:17px;font-weight:650;letter-spacing:-.2px}
 .book-avatar,.book-header-space{width:44px;height:44px}
@@ -104,8 +94,6 @@ to{transform:none}
 .sheet-scroll{overflow-y:auto;flex:1;min-height:0;padding-bottom:10px}
 .form-heading{padding:8px 50px 16px 0}
 .form-heading h1{font-size:24px}
-.form-heading p{display:none}
-.form-group{background:transparent}
 .field{display:block;padding:13px 0;border-bottom:.5px solid var(--line)}
 .field-label{display:block;color:var(--secondary);font-size:12px;margin-bottom:5px}
 .field-label small{float:right;color:var(--tertiary)}
@@ -138,7 +126,6 @@ to{transform:none}
 .reaction-choice input:checked+span{background:var(--soft);color:var(--accent);font-weight:650}
 .reaction-choice input:focus-visible+span{outline:2px solid var(--accent)}
 .form-footer{margin-top:18px}
-.form-footer .subtle{text-align:center;margin-top:10px}
 .for-label{color:var(--secondary)}
 .record-hero{padding:35px 0 20px}
 .detail-title{font-size:32px}
@@ -184,3 +171,9 @@ dialog p{font-size:14px;color:var(--secondary);white-space:pre-wrap;line-height:
 body.sheet-open{overflow:hidden}
 @media(max-width:599px){.log-more{display:none}
 }
+#app.login-screen{padding:0}
+.login-native{min-height:100dvh;display:flex;flex-direction:column;justify-content:space-between;padding:calc(72px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom))}
+.login-main h1{font-size:34px;line-height:1.15;letter-spacing:-.8px;font-weight:720}
+.login-main p{margin-top:10px;color:var(--secondary);font-size:14px}
+.login-primary{width:100%;min-height:50px;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:650}
+.privacy-link{display:block;min-height:44px;margin:12px auto 0;color:var(--secondary);font-size:12px}

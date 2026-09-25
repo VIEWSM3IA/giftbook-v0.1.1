@@ -1,1 +1,4 @@
-<view class="page login"><view class="book"></view><view class="title">礼物簿</view><view class="subtitle"><view>记住送过的礼物，</view><view>也记住在意的人。</view></view><view wx:if="{{error}}" class="error" role="alert">{{error}}</view><button class="primary" bindtap="login" loading="{{busy}}" disabled="{{busy}}">微信登录</button><view class="footer-note"><view>你的送礼记录仅自己可见。</view><view>登录后，在不同设备上找回这份记忆。</view></view></view>
+<view class="login-native" style="padding-top:{{statusTop + 72}}px">
+  <view class="login-main"><view class="login-title">礼物簿</view><view class="login-description">记录送给重要的人什么。</view></view>
+  <view class="login-actions"><view wx:if="{{error}}" class="error" role="alert">{{error}}</view><button class="login-primary" bindtap="login" loading="{{busy}}" disabled="{{busy}}">微信登录</button><button class="privacy-link" bindtap="privacy">隐私说明</button></view>
+</view>

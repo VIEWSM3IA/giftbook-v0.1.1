@@ -2,8 +2,6 @@
   "pages": [
     "pages/giftbook/index",
     "pages/login/index",
-    "pages/recipient/create",
-    "pages/record/create",
     "pages/record/detail",
     "pages/me/index"
   ],

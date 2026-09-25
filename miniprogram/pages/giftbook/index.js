@@ -7,11 +7,10 @@ Page({
     sortingId: '', targetId: '', activeTabId: '', railLeft: 0, scrolled: false, statusTop: 0,
     sheet: '', sheetEditId: '', sheetFull: false, sheetBusy: false, sheetError: '', sheetExpanded: false,
     personForm: { display_name: '', relation_type: '', age_range: '', gender: '', tags: [], note: '' },
-    giftForm: { gift_name: '', reaction_level: null, gifted_at: domain.today(), occasion: '', note: '' },
-    giftPrice: '', reactions: domain.REACTIONS, relations: domain.RELATIONS,
+    relations: domain.RELATIONS,
     ages: ['不记录', ...domain.AGE_BUCKETS], genders: ['不记录', ...domain.GENDERS.filter((value) => value !== '不记录')],
     tagChoices: domain.TAGS.map((label) => ({ label, selected: false })),
-    occasions: ['不记录', ...domain.OCCASIONS], today: domain.today(), swipeId: ''
+    swipeId: ''
   },
   onLoad(query) {
     this.preferredId = query.recipient_id || '';
@@ -87,9 +86,9 @@ Page({
   },
   add() {
     if (!this.data.active) return;
-    this.requestId = store.requestId();
-    this.setData({ sheet: 'gift', sheetEditId: '', sheetFull: false, sheetExpanded: false, sheetError: '', giftForm: { gift_name: '', reaction_level: null, gifted_at: domain.today(), occasion: '', note: '' }, giftPrice: '' });
+    this.selectComponent('#gift-sheet').open({ recipientId: this.data.active.id, recipientName: this.data.active.display_name });
   },
+  giftSheetSaved() { return this.selectId(this.data.active.id); },
   account() { this.restoreScroll = this.scrollTop || 0; wx.navigateTo({ url: '/pages/me/index' }); },
   closeSheet() { if (!this.data.sheetBusy) this.setData({ sheet: '', sheetFull: false }); },
   expandSheet() { this.setData({ sheetFull: !this.data.sheetFull }); },
@@ -109,23 +108,14 @@ Page({
     else { this.setData({ sheetError: '最多选择 8 个喜好' }); return; }
     this.setData({ 'personForm.tags': tags, tagChoices: domain.TAGS.map((label) => ({ label, selected: tags.includes(label) })), sheetError: '' });
   },
-  sheetReaction(e) { this.setData({ 'giftForm.reaction_level': Number(e.currentTarget.dataset.value) }); },
-  sheetPrice(e) { this.setData({ giftPrice: e.detail.value }); },
   async saveSheet() {
-    if (this.data.sheetBusy || !this.data.sheet) return;
+    if (this.data.sheetBusy || this.data.sheet !== 'person') return;
     this.setData({ sheetBusy: true, sheetError: '' });
     try {
-      if (this.data.sheet === 'person') {
-        const person = await store.request('/v1/recipients' + (this.data.sheetEditId ? '/' + this.data.sheetEditId : ''), this.data.sheetEditId ? 'PATCH' : 'POST', domain.validateRecipient(this.data.personForm));
-        this.setData({ sheet: '' });
-        this.preferredId = person.id;
-        await this.load();
-      } else {
-        const payload = domain.validateGift({ ...this.data.giftForm, recipient_id: this.data.active.id, price_fen: domain.parsePrice(this.data.giftPrice) });
-        await store.request('/v1/gifts' + (this.data.sheetEditId ? '/' + this.data.sheetEditId : ''), this.data.sheetEditId ? 'PATCH' : 'POST', this.data.sheetEditId ? payload : { ...payload, request_id: this.requestId });
-        this.setData({ sheet: '' });
-        await this.selectId(this.data.active.id);
-      }
+      const person = await store.request('/v1/recipients' + (this.data.sheetEditId ? '/' + this.data.sheetEditId : ''), this.data.sheetEditId ? 'PATCH' : 'POST', domain.validateRecipient(this.data.personForm));
+      this.setData({ sheet: '' });
+      this.preferredId = person.id;
+      await this.load();
       if (wx.vibrateShort) wx.vibrateShort({ type: 'light' });
     } catch (error) { this.setData({ sheetError: error.message }); }
     finally { this.setData({ sheetBusy: false }); }
@@ -158,7 +148,8 @@ Page({
     const id = e.currentTarget.dataset.id;
     try {
       const gift = await store.request('/v1/gifts/' + id);
-      this.setData({ sheet: 'gift', sheetEditId: id, sheetFull: true, sheetExpanded: true, sheetError: '', giftForm: { ...gift }, giftPrice: domain.formatPrice(gift.price_fen), swipeId: '' });
+      this.selectComponent('#gift-sheet').open({ gift, recipientId: gift.recipient_id, recipientName: this.data.active.display_name });
+      this.setData({ swipeId: '' });
     } catch (error) { this.setData({ logError: error.message }); }
   },
   async deleteGift(e) {

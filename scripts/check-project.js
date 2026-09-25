@@ -43,7 +43,15 @@ for (const file of walk(root).filter((name) => name.endsWith('.json'))) {
 const app = JSON.parse(fs.readFileSync(path.join(mini, 'app.json'), 'utf8'));
 for (const page of app.pages || []) {
   for (const extension of ['js', 'json', 'wxml', 'wxss']) requireFile(`miniprogram/${page}.${extension}`);
+  const config = JSON.parse(fs.readFileSync(path.join(mini, `${page}.json`), 'utf8'));
+  for (const component of Object.values(config.usingComponents || {})) {
+    const base = path.resolve(path.dirname(path.join(mini, page)), component);
+    for (const extension of ['js', 'json', 'wxml', 'wxss'])
+      if (!fs.existsSync(`${base}.${extension}`)) errors.push(`缺少组件文件：${path.relative(root, base)}.${extension}`);
+  }
 }
+if ((app.pages || []).some((page) => /pages\/(?:record|recipient)\/create$/.test(page)))
+  errors.push('旧 create 页面不应注册');
 for (const group of app.subpackages || []) {
   for (const page of group.pages || []) {
     for (const extension of ['js', 'json', 'wxml', 'wxss'])
@@ -67,6 +75,10 @@ if ((app.subpackages || []).length) errors.push('V0.1 不应注册未来功能�
 for (const file of [...walk(mini).filter((name) => name.endsWith('.wxml')), path.join(root, 'h5/app.js')]) {
   if (/推荐|收藏|分享|回访|成就|敬请期待/.test(fs.readFileSync(file, 'utf8')))
     errors.push(`${path.relative(root, file)} 存在范围外产品入口或文案`);
+}
+for (const file of [...walk(mini).filter((name) => /\.wxss$/.test(name)), path.join(root, 'h5/styles.css')]) {
+  if (/\.(?:book-art|welcome-visual|quiet-mark|person-card|history-item|fixed-action|card|group|chips|chip)(?![\w-])/.test(fs.readFileSync(file, 'utf8')))
+    errors.push(`${path.relative(root, file)} 包含已废弃样式`);
 }
 if (errors.length) {
   console.error(errors.join('\n'));

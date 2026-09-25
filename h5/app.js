@@ -29,14 +29,10 @@
   const paths = {
     book: 'M4 4h13a3 3 0 0 1 3 3v14H6a2 2 0 0 1-2-2V4Zm0 13h16M8 4v13m6-13v8l2-1.5 2 1.5V4',
     back: 'm14 5-7 7 7 7',
-    chevron: 'm9 5 7 7-7 7',
-    lock: 'M6 10h12v11H6zm2 0V6a4 4 0 0 1 8 0v4m-4 5v2'
+    chevron: 'm9 5 7 7-7 7'
   };
   function icon(name, cls = '') {
     return `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name] || paths.book}"/></svg>`;
-  }
-  function bookArt() {
-    return `<svg class="book-art" viewBox="0 0 180 190" fill="none" aria-hidden="true"><ellipse cx="91" cy="171" rx="61" ry="8" fill="#e7dde4"/><g transform="rotate(-9 90 95)"><rect x="31" y="23" width="113" height="143" rx="10" fill="#e6d4dd"/><rect x="31" y="19" width="113" height="141" rx="10" fill="#aa647e"/><path d="M44 20v139" stroke="#8e4a64" stroke-width="2"/><path d="M50 22h83a7 7 0 0 1 7 7v123H50" stroke="#bc8297"/><path d="M113 19v43l10-8 10 8V19" fill="#f0dce5"/><rect x="63" y="74" width="54" height="45" rx="3" stroke="#ead5df"/><path d="M63 87h54M90 74v45M90 74c-15 0-18-11-10-11 6 0 10 11 10 11Zm0 0c15 0 18-11 10-11-6 0-10 11-10 11Z" stroke="#ead5df" stroke-width="2"/><path d="M41 164h96" stroke="#fff" stroke-width="2"/></g><g transform="rotate(13 132 130)"><rect x="114" y="117" width="42" height="49" rx="5" fill="#fff" stroke="#e6dce4"/><path d="M124 139c-6-8 4-12 11-4 7-8 17-4 11 4l-11 10-11-10Z" fill="#bc8197"/></g></svg>`;
   }
   function nav(to) {
     if (current?.type === 'home' && !to.startsWith('home')) homeScroll = scrollY;
@@ -52,8 +48,10 @@
   function top(back = '', right = '') {
     return `<div class="topline">${back ? `<button class="back" data-go="${e(back)}">${icon('back')}返回</button>` : brand()}${right}</div>`;
   }
-  function sheetFrame(back, content) {
-    return `<div class="sheet-background" aria-hidden="true">${sheetBackground}</div><button class="sheet-backdrop" data-go="${e(back)}" aria-label="关闭表单"></button><section class="form-sheet" role="dialog" aria-modal="true"><button class="sheet-handle" data-action="sheet-expand" aria-label="展开或收起表单"><span></span></button><button class="sheet-close" data-go="${e(back)}" aria-label="关闭">×</button><div class="sheet-scroll">${content}</div></section>`;
+  function sheetFrame(back, content, detail = false) {
+    const close = detail ? 'data-action="close-detail-sheet"' : `data-go="${e(back)}"`;
+    const background = detail ? '<div id="detail-sheet">' : `<div class="sheet-background" aria-hidden="true">${sheetBackground}</div>`;
+    return `${background}<button class="sheet-backdrop" ${close} aria-label="关闭表单"></button><section class="form-sheet ${detail ? 'full' : ''}" role="dialog" aria-modal="true"><button class="sheet-handle" data-action="sheet-expand" aria-label="展开或收起表单"><span></span></button><button class="sheet-close" ${close} aria-label="关闭">×</button><div class="sheet-scroll">${content}</div></section>${detail ? '</div>' : ''}`;
   }
   function toast(message) {
     const el = document.getElementById('toast');
@@ -124,7 +122,8 @@
   }
   function welcome() {
     hideTabs();
-    app.innerHTML = `<section class="welcome"><div>${brand()}</div><div class="welcome-visual">${bookArt()}</div><h1>送过的礼物，<br>记得的人。</h1><p class="tagline">把送过的礼物，<br>留在重要的人身边。</p><div class="welcome-bottom"><div id="form-error" class="error" role="alert"></div><button class="primary" data-action="login">${localLogin ? '开始记录' : '重新登录'}</button><p>${icon('lock').replace('class="icon "', 'class="icon" style="display:inline;width:12px;height:12px;vertical-align:-2px"')} TA 与礼物记录，仅自己可见</p><p><button class="privacy-link" data-action="privacy">隐私说明</button></p></div></section>`;
+    app.classList.add('login-screen');
+    app.innerHTML = `<section class="login-native"><div class="login-main"><h1>礼物簿</h1><p>记录送给重要的人什么。</p></div><div class="login-actions"><div id="form-error" class="error" role="alert"></div><button class="login-primary" data-action="login">${localLogin ? '开始记录' : '微信登录'}</button><button class="privacy-link" data-action="privacy">隐私说明</button></div></section>`;
   }
   function bookHeader() {
     const avatar = user?.avatar_key
@@ -232,7 +231,13 @@
     const p = { ...original, ...draft };
     current = { type: 'person-form', original };
     app.innerHTML = sheetFrame('home',
-      `<header class="form-heading"><h1>${id ? '编辑 TA' : '添加一个人'}</h1><p>${id ? '让礼物簿更懂你记住的人。' : '先记下称呼与关系，其他慢慢补充。'}</p></header><form data-form="person" data-id="${e(id || '')}" data-draft="${key}" novalidate><div class="form-group">${inputField('称呼', 'display_name', p.display_name, '你平时怎么称呼 TA？', 20)}${selectField('关系', 'relation_type', D.RELATIONS, p.relation_type, '请选择你和 TA 的关系')}</div><details class="optional" ${p._expanded ? 'open' : ''}><summary>再补充一点${icon('chevron')}</summary><div class="form-group">${selectField('年龄段', 'age_range', D.AGE_BUCKETS, p.age_range)}${selectField('性别', 'gender', D.GENDERS, p.gender)}<fieldset class="field"><legend class="field-label">TA 的喜好<small>选填 · 最多 8 个</small></legend><div class="tag-options">${D.TAGS.map((tag) => `<label class="tag-option"><input type="checkbox" name="tags" value="${e(tag)}" ${(p.tags || []).includes(tag) ? 'checked' : ''}><span>${tag}</span></label>`).join('')}</div></fieldset>${noteField('note', p.note, 200)}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button type="submit" class="primary">${id ? '保存修改' : '加入礼物簿'}</button><p class="subtle">${icon('lock').replace('class="icon "', 'class="icon" style="display:inline;width:12px;height:12px;vertical-align:-2px"')} 这些信息仅自己可见</p></div>${id ? '<button type="button" class="danger-button" data-action="delete-person">删除 TA</button>' : ''}</form>`);
+      `<header class="form-heading"><h1>${id ? '编辑 TA' : '添加一个人'}</h1></header><form data-form="person" data-id="${e(id || '')}" data-draft="${key}" novalidate><div class="form-group">${inputField('称呼', 'display_name', p.display_name, '你平时怎么称呼 TA？', 20)}${selectField('关系', 'relation_type', D.RELATIONS, p.relation_type, '请选择你和 TA 的关系')}</div><details class="optional" ${p._expanded ? 'open' : ''}><summary>再多记一点${icon('chevron')}</summary><div class="form-group">${selectField('年龄段', 'age_range', D.AGE_BUCKETS, p.age_range)}${selectField('性别', 'gender', D.GENDERS, p.gender)}<fieldset class="field"><legend class="field-label">TA 的喜好<small>选填 · 最多 8 个</small></legend><div class="tag-options">${D.TAGS.map((tag) => `<label class="tag-option"><input type="checkbox" name="tags" value="${e(tag)}" ${(p.tags || []).includes(tag) ? 'checked' : ''}><span>${tag}</span></label>`).join('')}</div></fieldset>${noteField('note', p.note, 200)}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button type="submit" class="primary">${id ? '保存修改' : '加入礼物簿'}</button></div>${id ? '<button type="button" class="danger-button" data-action="delete-person">删除 TA</button>' : ''}</form>`);
+  }
+  function giftFormHTML(person, original, editId, key, detail = false) {
+    const draft = getDraft(key);
+    const g = { ...original, ...draft };
+    const price = draft.price !== undefined ? draft.price : D.formatPrice(original.price_fen);
+    return `<header class="form-heading"><h1>${editId ? '编辑礼物' : '记一份礼物'}</h1></header><div class="recipient-chip"><div><span class="for-label">送给</span><strong> ${e(person.display_name)}</strong><small>${e(person.relation_type)}</small></div></div><form data-form="gift" data-id="${e(editId || '')}" data-recipient="${e(person.id)}" data-draft="${key}" data-request-id="${e(draft.request_id || uuid())}" ${detail ? 'data-return="detail"' : ''} novalidate><div class="form-group">${inputField('礼物', 'gift_name', g.gift_name, '送了什么礼物？', 60)}</div><fieldset class="reaction-section"><legend>TA 的反应</legend><div class="reactions">${D.REACTIONS.map((r) => `<label class="reaction-choice"><input type="radio" name="reaction_level" value="${r.value}" ${Number(g.reaction_level) === r.value ? 'checked' : ''}><span>${r.label}</span></label>`).join('')}</div></fieldset><div class="form-group"><label class="field row-field"><span class="field-label">送礼日期</span><input aria-label="送礼日期" type="date" name="gifted_at" max="${D.today()}" value="${e(g.gifted_at || D.today())}"></label></div><details class="optional" ${editId || g._expanded ? 'open' : ''}><summary>再记一点细节${icon('chevron')}</summary><div class="form-group">${selectField('场景', 'occasion', D.OCCASIONS, g.occasion)}<label class="field row-field"><span class="field-label">价格 · 元</span><input name="price" inputmode="decimal" placeholder="选填" value="${e(price)}" maxlength="12"></label>${noteField('note', g.note, 300, '一句话备注', '比如，TA 收到时说了什么')}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button class="primary" type="submit">${editId ? '保存修改' : '记下来'}</button></div></form>`;
   }
   async function recordForm(recipientId, editId, version) {
     let original = {};
@@ -250,13 +255,10 @@
     const p = await api('/recipients/' + recipientId);
     if (version !== routeVersion) return;
     const key = editId ? 'gift-' + editId : 'record-' + recipientId;
-    const draft = getDraft(key);
-    const g = { ...original, ...draft };
-    const price = draft.price !== undefined ? draft.price : D.formatPrice(original.price_fen);
     current = { type: 'record-form', person: p, original };
     hideTabs();
     app.innerHTML = sheetFrame(editId ? 'gift/' + editId : 'home?recipient=' + recipientId,
-      `<header class="form-heading"><h1>${editId ? '编辑礼物' : '记一份礼物'}</h1></header><div class="recipient-chip"><div><span class="for-label">送给</span><strong> ${e(p.display_name)}</strong><small>${e(p.relation_type)}</small></div></div><form data-form="gift" data-id="${e(editId || '')}" data-recipient="${e(recipientId)}" data-draft="${key}" data-request-id="${e(draft.request_id || uuid())}" novalidate><div class="form-group">${inputField('礼物', 'gift_name', g.gift_name, '送了什么礼物？', 60)}</div><fieldset class="reaction-section"><legend>TA 的反应</legend><div class="reactions">${D.REACTIONS.map((r) => `<label class="reaction-choice"><input type="radio" name="reaction_level" value="${r.value}" ${Number(g.reaction_level) === r.value ? 'checked' : ''}><span>${r.label}</span></label>`).join('')}</div></fieldset><div class="form-group"><label class="field row-field"><span class="field-label">送礼日期</span><input aria-label="送礼日期" type="date" name="gifted_at" max="${D.today()}" value="${e(g.gifted_at || D.today())}"></label></div><details class="optional" ${g._expanded ? 'open' : ''}><summary>再记一点细节${icon('chevron')}</summary><div class="form-group">${selectField('场景', 'occasion', D.OCCASIONS, g.occasion)}<label class="field row-field"><span class="field-label">价格 · 元</span><input name="price" inputmode="decimal" placeholder="选填" value="${e(price)}" maxlength="12"></label>${noteField('note', g.note, 300, '一句话备注', '比如，TA 收到时说了什么')}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button class="primary" type="submit">${editId ? '保存修改' : '记下来'}</button></div></form>`);
+      giftFormHTML(p, original, editId, key));
   }
   async function giftDetail(id, version) {
     const g = await api('/gifts/' + id);
@@ -265,7 +267,7 @@
     current = { type: 'gift', gift: g, person: p };
     hideTabs();
     app.innerHTML =
-      top('home?recipient=' + p.id, `<button class="text-button" data-go="gift-edit/${e(id)}">编辑</button>`) +
+      top('home?recipient=' + p.id, '<button class="text-button" data-action="edit-detail-gift">编辑</button>') +
       `<section class="record-hero"><h1 class="detail-title">${e(g.gift_name)}</h1><div class="record-reaction">${e(D.reaction(g.reaction_level).label)}</div></section><dl class="detail-list"><div class="detail-line"><dt>送给</dt><dd>${e(p.display_name)}</dd></div><div class="detail-line"><dt>日期</dt><dd>${e(D.formatDate(g.gifted_at))}</dd></div>${g.occasion ? `<div class="detail-line"><dt>场景</dt><dd>${e(g.occasion)}</dd></div>` : ''}${g.price_fen !== null && g.price_fen !== undefined ? `<div class="detail-line"><dt>价格</dt><dd>¥ ${e(D.formatPrice(g.price_fen))}</dd></div>` : ''}</dl>${g.note ? `<section class="note-card"><p>${e(g.note)}</p></section>` : ''}<button class="danger-button" data-action="delete-gift">删除这条记录</button>`;
   }
   async function me(version) {
@@ -290,6 +292,7 @@
       welcome();
       return;
     }
+    app.classList.remove('login-screen');
     app.innerHTML = top() + '<p class="loading-label">正在打开礼物簿…</p>';
     hideTabs();
     try {
@@ -342,6 +345,17 @@
   }
   async function action(name, button) {
     if (name === 'sheet-expand') { button.closest('.form-sheet')?.classList.toggle('full'); return; }
+    if (name === 'edit-detail-gift' && current?.type === 'gift') {
+      const { gift, person } = current;
+      app.insertAdjacentHTML('beforeend', sheetFrame('', giftFormHTML(person, gift, gift.id, 'gift-' + gift.id, true), true));
+      document.body.classList.add('sheet-open');
+      return;
+    }
+    if (name === 'close-detail-sheet') {
+      document.getElementById('detail-sheet')?.remove();
+      document.body.classList.remove('sheet-open');
+      return;
+    }
     if (name === 'person-menu') {
       const id = current?.person?.id;
       if (id) openDialog(`<h2>${e(current.person.display_name)}</h2><div class="gift-menu"><button data-go="person-edit/${e(id)}">编辑 TA</button><button data-action="sort-hint">调整顺序</button><button data-action="delete-current-person">删除 TA</button></div>`);
@@ -727,7 +741,10 @@
         });
         clearDraft(form);
         if (version === routeVersion) {
-          nav('home?recipient=' + result.recipient_id);
+          if (form.dataset.return === 'detail') {
+            await giftDetail(id, version);
+            document.body.classList.remove('sheet-open');
+          } else nav('home?recipient=' + result.recipient_id);
           toast(id ? '已保存修改' : '已记下这份礼物');
         }
       } else {

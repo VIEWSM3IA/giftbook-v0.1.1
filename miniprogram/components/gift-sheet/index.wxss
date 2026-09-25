@@ -1,0 +1,6 @@
+@import "../../styles/sheet.wxss";
+.reaction-label{margin-top:24rpx}
+.reaction-scroll{width:100%;white-space:nowrap}
+.reaction-options{display:flex;gap:12rpx;width:max-content;padding:8rpx 0}
+.reaction-option{min-width:88rpx;height:88rpx;line-height:72rpx;padding:8rpx 22rpx;border-radius:44rpx;background:rgba(118,118,128,.08);color:#6E6E73;font-size:25rpx}
+.reaction-option.selected{background:rgba(197,72,104,.10);color:#C54868;font-weight:600}
