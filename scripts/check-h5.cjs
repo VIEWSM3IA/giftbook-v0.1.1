@@ -108,6 +108,7 @@ const previewPassword = process.env.PREVIEW_ACCESS_PASSWORD || '';
     const olderGiftId = (await call('/recipients/' + roseId + '/gifts')).data.items[1].id;
     await page.locator('#toast.show').waitFor({ state: 'hidden' });
     await page.locator('.log-entry').first().click();
+    await page.waitForURL(base + '/#gift/' + giftId);
     await page.getByRole('heading', { name: '拍立得', exact: true }).waitFor();
     const detailUrl = page.url();
     await click('编辑');
