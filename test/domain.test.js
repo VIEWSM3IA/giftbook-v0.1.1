@@ -68,7 +68,7 @@ test('时间日志同年只显示一次年份，跨年重新显示', () => {
   ];
   const entries = d.giftLog(gifts);
   assert.deepEqual(entries.map((entry) => entry.log_year), ['2026', '', '2025']);
-  assert.equal(entries[0].log_meta, '生日 · 约 ¥899');
+  assert.equal(entries[0].log_meta, '生日 · ¥899');
   assert.equal(entries[1].log_reaction, '还不错');
-  assert.equal(entries[2].log_meta, '纪念日 · 约 ¥0');
+  assert.equal(entries[2].log_meta, '纪念日 · ¥0');
 });

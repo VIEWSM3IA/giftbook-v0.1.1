@@ -16,6 +16,10 @@
     sortTimer = null,
     sortState = null,
     touchState = null,
+    giftTouch = null,
+    suppressGiftClick = false,
+    sheetBackground = '',
+    homeScroll = 0,
     activeWrite = Promise.resolve();
   const e = (value) =>
     String(value == null ? '' : value).replace(
@@ -24,39 +28,21 @@
     );
   const paths = {
     book: 'M4 4h13a3 3 0 0 1 3 3v14H6a2 2 0 0 1-2-2V4Zm0 13h16M8 4v13m6-13v8l2-1.5 2 1.5V4',
-    plus: 'M12 5v14M5 12h14',
-    person: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
     back: 'm14 5-7 7 7 7',
     chevron: 'm9 5 7 7-7 7',
-    gift: 'M3 8h18v5H3zm2 5v8h14v-8M12 8v13M12 8H8a3 3 0 1 1 3-3l1 3Zm0 0h4a3 3 0 1 0-3-3l-1 3Z',
-    lock: 'M6 10h12v11H6zm2 0V6a4 4 0 0 1 8 0v4m-4 5v2',
-    edit: 'm15 4 5 5M4 20l5-1L21 7l-5-5L4 14v6Z',
-    exit: 'M10 4H4v16h6m5-13 5 5-5 5m-7-5h12',
-    check: 'm5 12 4 4L19 6',
-    heart: 'M20 5c-3-3-6-1-8 1-2-2-5-4-8-1-4 4 1 9 8 15 7-6 12-11 8-15Z'
+    lock: 'M6 10h12v11H6zm2 0V6a4 4 0 0 1 8 0v4m-4 5v2'
   };
   function icon(name, cls = '') {
-    return `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name] || paths.gift}"/></svg>`;
-  }
-  function face(level) {
-    const mouths = ['M11 22h10', 'M10 20q6 5 12 0', 'M10 19q6 8 12 0', 'M9 18q7 11 14 0Z', 'M10 20q6 8 12 0'];
-    const eyes =
-      level === 5
-        ? '<path d="m8 11 2-2 2 2-2 3Zm12 0 2-2 2 2-2 3Z"/>'
-        : level === 4
-          ? '<path d="m8 13 3-2 3 2m4 0 3-2 3 2"/>'
-          : '<path d="M11 12v2m10-2v2"/>';
-    return `<svg class="face" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/>${eyes}<path d="${mouths[level - 1]}"/></svg>`;
+    return `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name] || paths.book}"/></svg>`;
   }
   function bookArt() {
     return `<svg class="book-art" viewBox="0 0 180 190" fill="none" aria-hidden="true"><ellipse cx="91" cy="171" rx="61" ry="8" fill="#e7dde4"/><g transform="rotate(-9 90 95)"><rect x="31" y="23" width="113" height="143" rx="10" fill="#e6d4dd"/><rect x="31" y="19" width="113" height="141" rx="10" fill="#aa647e"/><path d="M44 20v139" stroke="#8e4a64" stroke-width="2"/><path d="M50 22h83a7 7 0 0 1 7 7v123H50" stroke="#bc8297"/><path d="M113 19v43l10-8 10 8V19" fill="#f0dce5"/><rect x="63" y="74" width="54" height="45" rx="3" stroke="#ead5df"/><path d="M63 87h54M90 74v45M90 74c-15 0-18-11-10-11 6 0 10 11 10 11Zm0 0c15 0 18-11 10-11-6 0-10 11-10 11Z" stroke="#ead5df" stroke-width="2"/><path d="M41 164h96" stroke="#fff" stroke-width="2"/></g><g transform="rotate(13 132 130)"><rect x="114" y="117" width="42" height="49" rx="5" fill="#fff" stroke="#e6dce4"/><path d="M124 139c-6-8 4-12 11-4 7-8 17-4 11 4l-11 10-11-10Z" fill="#bc8197"/></g></svg>`;
   }
-  function avatar(person, size = '') {
-    const name = String(person.display_name || '我');
-    const tone = Array.from(name).reduce((n, c) => n + c.codePointAt(0), 0) % 4;
-    return `<span class="avatar ${size}" data-tone="${tone}" aria-hidden="true">${e(Array.from(name)[0])}</span>`;
-  }
   function nav(to) {
+    if (current?.type === 'home' && !to.startsWith('home')) homeScroll = scrollY;
+    if (to === 'person-new' || to.startsWith('record/') || to.startsWith('person-edit/') || to.startsWith('gift-edit/'))
+      sheetBackground = app.innerHTML;
+    else if (!to.startsWith('gift/')) sheetBackground = '';
     if (location.hash.slice(1) === to) render();
     else location.hash = to;
   }
@@ -65,6 +51,9 @@
   }
   function top(back = '', right = '') {
     return `<div class="topline">${back ? `<button class="back" data-go="${e(back)}">${icon('back')}返回</button>` : brand()}${right}</div>`;
+  }
+  function sheetFrame(back, content) {
+    return `<div class="sheet-background" aria-hidden="true">${sheetBackground}</div><button class="sheet-backdrop" data-go="${e(back)}" aria-label="关闭表单"></button><section class="form-sheet" role="dialog" aria-modal="true"><button class="sheet-handle" data-action="sheet-expand" aria-label="展开或收起表单"><span></span></button><button class="sheet-close" data-go="${e(back)}" aria-label="关闭">×</button><div class="sheet-scroll">${content}</div></section>`;
   }
   function toast(message) {
     const el = document.getElementById('toast');
@@ -133,9 +122,6 @@
     tabs.className = '';
     tabs.innerHTML = '';
   }
-  function quiet() {
-    return `<div class="quiet-mark">${icon('lock')}只属于你的礼物簿</div>`;
-  }
   function welcome() {
     hideTabs();
     app.innerHTML = `<section class="welcome"><div>${brand()}</div><div class="welcome-visual">${bookArt()}</div><h1>送过的礼物，<br>记得的人。</h1><p class="tagline">把送过的礼物，<br>留在重要的人身边。</p><div class="welcome-bottom"><div id="form-error" class="error" role="alert"></div><button class="primary" data-action="login">${localLogin ? '开始记录' : '重新登录'}</button><p>${icon('lock').replace('class="icon "', 'class="icon" style="display:inline;width:12px;height:12px;vertical-align:-2px"')} TA 与礼物记录，仅自己可见</p><p><button class="privacy-link" data-action="privacy">隐私说明</button></p></div></section>`;
@@ -147,11 +133,11 @@
     return `<header class="book-header"><button class="book-avatar" data-go="me" aria-label="账号与设置">${avatar}</button><h1>礼物簿</h1><span class="book-header-space"></span></header>`;
   }
   function recipientTabs(people, activeId) {
-    return `<nav class="recipient-switcher" aria-label="切换 TA"><div class="recipient-scroll">${people.map((p) => `<button class="recipient-tab ${p.id === activeId ? 'active' : ''}" data-recipient-id="${e(p.id)}" ${p.id === activeId ? 'aria-current="page"' : ''} title="${e(p.display_name)}">${e(p.display_name)}</button>`).join('')}</div><button class="recipient-add" data-go="person-new" aria-label="添加 TA">＋ TA</button></nav>`;
+    return `<nav class="recipient-switcher" aria-label="切换 TA"><div class="recipient-scroll">${people.map((p) => `<button class="recipient-tab ${p.id === activeId ? 'active' : ''}" data-recipient-id="${e(p.id)}" ${p.id === activeId ? 'aria-current="page"' : ''} title="${e(p.display_name)}">${e(p.display_name)}</button>`).join('')}</div><button class="recipient-add" data-go="person-new" aria-label="添加 TA">＋</button></nav>`;
   }
   function logHTML(gifts) {
-    if (!gifts.length) return `<div class="log-empty"><h3>还没有记录</h3><p>给 ${e(current.person.display_name)} 记下第一份礼物。</p><button data-action="add-gift">记一份礼物</button></div>`;
-    return D.giftLog(gifts).map((g) => `<article class="log-entry" id="gift-${e(g.id)}"><time class="log-date" datetime="${e(g.gifted_at)}"><strong>${e(g.log_date)}</strong>${g.log_year ? `<span>${e(g.log_year)}</span>` : ''}</time><div class="log-body"><div class="log-title-row"><h3>${e(g.gift_name)}</h3><button class="log-more" data-action="gift-menu" data-id="${e(g.id)}" aria-label="${e(g.gift_name)}更多操作">•••</button></div>${g.log_meta ? `<p class="log-meta">${e(g.log_meta)}</p>` : ''}<p class="log-reaction">${e(g.log_reaction)}</p>${g.note ? `<p class="log-note">${e(g.note)}</p>` : ''}</div></article>`).join('');
+    if (!gifts.length) return `<div class="log-empty"><h3>还没有礼物记录</h3><button data-action="add-gift">记第一份</button></div>`;
+    return D.giftLog(gifts).map((g) => `<div class="log-shell" id="gift-${e(g.id)}"><div class="swipe-actions"><button data-go="gift-edit/${e(g.id)}">编辑</button><button data-action="delete-inline" data-id="${e(g.id)}">删除</button></div><article class="log-entry" data-gift-id="${e(g.id)}" tabindex="0" role="button" aria-label="查看${e(g.gift_name)}"><time class="log-date" datetime="${e(g.gifted_at)}"><strong>${e(g.log_date)}</strong>${g.log_year ? `<span>${e(g.log_year)}</span>` : ''}</time><div class="log-title-row"><h3>${e(g.gift_name)}</h3><button class="log-more" data-action="gift-menu" data-id="${e(g.id)}" aria-label="${e(g.gift_name)}更多操作">•••</button></div>${g.log_meta ? `<p class="log-meta">${e(g.log_meta)}</p>` : ''}<p class="log-reaction">${e(g.log_reaction)}</p>${g.note ? `<p class="log-note">${e(g.note)}</p>` : ''}</article></div>`).join('');
   }
   async function selectRecipient(id, remember = true) {
     if (current?.type !== 'home') return;
@@ -171,10 +157,10 @@
     const scrollRect = nextScroll.getBoundingClientRect();
     if (tabRect.left < scrollRect.left) nextScroll.scrollLeft -= scrollRect.left - tabRect.left;
     if (tabRect.right > scrollRect.right) nextScroll.scrollLeft += tabRect.right - scrollRect.right;
-    app.querySelector('#book-content').innerHTML = `<section class="recipient-summary"><div><h2>${e(person.display_name)}</h2><p>${[person.relation_type, person.age_range ? person.age_range + ' 岁' : ''].filter(Boolean).map(e).join(' · ')}</p></div><button class="summary-edit" data-go="person-edit/${e(id)}">编辑</button></section>${person.tags?.length ? `<div class="book-tags">${person.tags.map((tag) => `<span>${e(tag)}</span>`).join('')}</div>` : ''}<section class="gift-log" id="book-log"><p class="log-loading">正在读取记录…</p></section><button class="gift-fab" data-go="record/${e(id)}">＋ 记一份礼物</button>`;
+    app.querySelector('#book-content').innerHTML = `<section class="recipient-summary"><div><h2>${e(person.display_name)}</h2><p>${[person.relation_type, person.age_range ? person.age_range + ' 岁' : ''].filter(Boolean).map(e).join(' · ')}</p></div><button class="summary-edit" data-action="person-menu" aria-label="管理这位 TA">•••</button></section>${person.tags?.length ? `<div class="book-tags">${person.tags.map((tag) => `<span>${e(tag)}</span>`).join('')}</div>` : ''}<section class="gift-log" id="book-log"><p class="log-loading">正在读取记录…</p></section><button class="gift-fab" data-go="record/${e(id)}" aria-label="记一份礼物">＋</button>`;
     if (remember) {
       activeWrite = activeWrite.catch(() => {}).then(() => api('/me/active-recipient', 'PATCH', { recipient_id: id }));
-      await activeWrite.catch((error) => toast(error.message));
+      activeWrite.catch((error) => toast(error.message));
     }
     try {
       const result = await api('/recipients/' + id + '/gifts');
@@ -197,8 +183,9 @@
     hideTabs();
     app.innerHTML = bookHeader() + (people.length
       ? `<div id="book-tabs">${recipientTabs(people, id)}</div><div id="book-content"></div>`
-      : '<section class="book-first"><h2>还没有 TA</h2><button data-go="person-new">添加第一个 TA</button></section>');
+      : '<section class="book-first"><h2>还没有人</h2><button data-go="person-new">添加第一个人</button></section>');
     if (id) await selectRecipient(id, true);
+    if (version === routeVersion && homeScroll) requestAnimationFrame(() => window.scrollTo(0, homeScroll));
   }
   function optionList(options, value, placeholder = '请选择') {
     return (
@@ -244,9 +231,8 @@
     const draft = getDraft(key);
     const p = { ...original, ...draft };
     current = { type: 'person-form', original };
-    app.innerHTML =
-      top('home') +
-      `<header class="form-heading"><h1>${id ? '编辑 TA' : '新建 TA'}</h1><p>${id ? '让礼物簿更懂你记住的人。' : '先记下称呼与关系，其他慢慢补充。'}</p></header><form data-form="person" data-id="${e(id || '')}" data-draft="${key}" novalidate><div class="form-group">${inputField('称呼', 'display_name', p.display_name, '你平时怎么称呼 TA？', 40)}${selectField('关系', 'relation_type', D.RELATIONS, p.relation_type, '请选择你和 TA 的关系')}</div><details class="optional" ${p._expanded ? 'open' : ''}><summary>再补充一点${icon('chevron')}</summary><div class="form-group">${selectField('年龄段', 'age_range', D.AGE_BUCKETS, p.age_range)}${selectField('性别', 'gender', D.GENDERS, p.gender)}<fieldset class="field"><legend class="field-label">TA 的喜好<small>选填 · 最多 8 个</small></legend><div class="tag-options">${D.TAGS.map((tag) => `<label class="tag-option"><input type="checkbox" name="tags" value="${e(tag)}" ${(p.tags || []).includes(tag) ? 'checked' : ''}><span>${tag}</span></label>`).join('')}</div></fieldset>${noteField('note', p.note, 200)}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button type="submit" class="primary">${id ? '保存修改' : '记住这个 TA'}</button><p class="subtle">${icon('lock').replace('class="icon "', 'class="icon" style="display:inline;width:12px;height:12px;vertical-align:-2px"')} 这些信息仅自己可见</p></div>${id ? '<button type="button" class="danger-button" data-action="delete-person">删除 TA</button>' : ''}</form>`;
+    app.innerHTML = sheetFrame('home',
+      `<header class="form-heading"><h1>${id ? '编辑 TA' : '添加一个人'}</h1><p>${id ? '让礼物簿更懂你记住的人。' : '先记下称呼与关系，其他慢慢补充。'}</p></header><form data-form="person" data-id="${e(id || '')}" data-draft="${key}" novalidate><div class="form-group">${inputField('称呼', 'display_name', p.display_name, '你平时怎么称呼 TA？', 20)}${selectField('关系', 'relation_type', D.RELATIONS, p.relation_type, '请选择你和 TA 的关系')}</div><details class="optional" ${p._expanded ? 'open' : ''}><summary>再补充一点${icon('chevron')}</summary><div class="form-group">${selectField('年龄段', 'age_range', D.AGE_BUCKETS, p.age_range)}${selectField('性别', 'gender', D.GENDERS, p.gender)}<fieldset class="field"><legend class="field-label">TA 的喜好<small>选填 · 最多 8 个</small></legend><div class="tag-options">${D.TAGS.map((tag) => `<label class="tag-option"><input type="checkbox" name="tags" value="${e(tag)}" ${(p.tags || []).includes(tag) ? 'checked' : ''}><span>${tag}</span></label>`).join('')}</div></fieldset>${noteField('note', p.note, 200)}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button type="submit" class="primary">${id ? '保存修改' : '加入礼物簿'}</button><p class="subtle">${icon('lock').replace('class="icon "', 'class="icon" style="display:inline;width:12px;height:12px;vertical-align:-2px"')} 这些信息仅自己可见</p></div>${id ? '<button type="button" class="danger-button" data-action="delete-person">删除 TA</button>' : ''}</form>`);
   }
   async function recordForm(recipientId, editId, version) {
     let original = {};
@@ -269,9 +255,8 @@
     const price = draft.price !== undefined ? draft.price : D.formatPrice(original.price_fen);
     current = { type: 'record-form', person: p, original };
     hideTabs();
-    app.innerHTML =
-      top(editId ? 'gift/' + editId : 'home?recipient=' + recipientId) +
-      `<header class="form-heading"><h1>${editId ? '编辑礼物' : '记一份礼物'}</h1></header><div class="recipient-chip">${avatar(p)}<div><span class="for-label">送给</span><strong> ${e(p.display_name)}</strong><small>${e(p.relation_type)}</small></div></div><form data-form="gift" data-id="${e(editId || '')}" data-recipient="${e(recipientId)}" data-draft="${key}" data-request-id="${e(draft.request_id || uuid())}" novalidate><div class="form-group">${inputField('礼物名称', 'gift_name', g.gift_name, '送了什么礼物？', 120)}</div><fieldset class="reaction-section"><legend>TA 的反应</legend><div class="reactions">${D.REACTIONS.map((r) => `<label class="reaction-choice"><input type="radio" name="reaction_level" value="${r.value}" ${Number(g.reaction_level) === r.value ? 'checked' : ''}><span>${face(r.value)}${r.label}</span></label>`).join('')}</div></fieldset><div class="form-group"><label class="field row-field"><span class="field-label">送礼日期</span><input aria-label="送礼日期" type="date" name="gifted_at" max="${D.today()}" value="${e(g.gifted_at || D.today())}"></label></div><details class="optional" ${g._expanded ? 'open' : ''}><summary>再记一点细节${icon('chevron')}</summary><div class="form-group">${selectField('场景', 'occasion', D.OCCASIONS, g.occasion)}<label class="field row-field"><span class="field-label">价格 · 元</span><input name="price" inputmode="decimal" placeholder="选填" value="${e(price)}" maxlength="12"></label>${noteField('note', g.note, 300, '一句话备注', '比如，TA 收到时说了什么')}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button class="primary" type="submit">${editId ? '保存修改' : '保存这份礼物'}</button></div></form>`;
+    app.innerHTML = sheetFrame(editId ? 'gift/' + editId : 'home?recipient=' + recipientId,
+      `<header class="form-heading"><h1>${editId ? '编辑礼物' : '记一份礼物'}</h1></header><div class="recipient-chip"><div><span class="for-label">送给</span><strong> ${e(p.display_name)}</strong><small>${e(p.relation_type)}</small></div></div><form data-form="gift" data-id="${e(editId || '')}" data-recipient="${e(recipientId)}" data-draft="${key}" data-request-id="${e(draft.request_id || uuid())}" novalidate><div class="form-group">${inputField('礼物', 'gift_name', g.gift_name, '送了什么礼物？', 60)}</div><fieldset class="reaction-section"><legend>TA 的反应</legend><div class="reactions">${D.REACTIONS.map((r) => `<label class="reaction-choice"><input type="radio" name="reaction_level" value="${r.value}" ${Number(g.reaction_level) === r.value ? 'checked' : ''}><span>${r.label}</span></label>`).join('')}</div></fieldset><div class="form-group"><label class="field row-field"><span class="field-label">送礼日期</span><input aria-label="送礼日期" type="date" name="gifted_at" max="${D.today()}" value="${e(g.gifted_at || D.today())}"></label></div><details class="optional" ${g._expanded ? 'open' : ''}><summary>再记一点细节${icon('chevron')}</summary><div class="form-group">${selectField('场景', 'occasion', D.OCCASIONS, g.occasion)}<label class="field row-field"><span class="field-label">价格 · 元</span><input name="price" inputmode="decimal" placeholder="选填" value="${e(price)}" maxlength="12"></label>${noteField('note', g.note, 300, '一句话备注', '比如，TA 收到时说了什么')}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button class="primary" type="submit">${editId ? '保存修改' : '记下来'}</button></div></form>`);
   }
   async function giftDetail(id, version) {
     const g = await api('/gifts/' + id);
@@ -281,7 +266,7 @@
     hideTabs();
     app.innerHTML =
       top('home?recipient=' + p.id, `<button class="text-button" data-go="gift-edit/${e(id)}">编辑</button>`) +
-      `<section class="record-hero"><span class="gift-icon">${icon('gift')}</span><h1 class="detail-title">${e(g.gift_name)}</h1><div class="record-reaction">${face(g.reaction_level)}${e(D.reaction(g.reaction_level).label)}</div></section><dl class="detail-list"><div class="detail-line"><dt>送给</dt><dd>${e(p.display_name)}</dd></div><div class="detail-line"><dt>送礼日期</dt><dd>${e(D.formatDate(g.gifted_at))}</dd></div>${g.occasion ? `<div class="detail-line"><dt>场景</dt><dd>${e(g.occasion)}</dd></div>` : ''}${g.price_fen !== null && g.price_fen !== undefined ? `<div class="detail-line"><dt>价格</dt><dd>¥ ${e(D.formatPrice(g.price_fen))}</dd></div>` : ''}</dl>${g.note ? `<section class="note-card"><h2>一句话备注</h2><p>${e(g.note)}</p></section>` : ''}${quiet()}<button class="danger-button" data-action="delete-gift">删除这条记录</button>`;
+      `<section class="record-hero"><h1 class="detail-title">${e(g.gift_name)}</h1><div class="record-reaction">${e(D.reaction(g.reaction_level).label)}</div></section><dl class="detail-list"><div class="detail-line"><dt>送给</dt><dd>${e(p.display_name)}</dd></div><div class="detail-line"><dt>日期</dt><dd>${e(D.formatDate(g.gifted_at))}</dd></div>${g.occasion ? `<div class="detail-line"><dt>场景</dt><dd>${e(g.occasion)}</dd></div>` : ''}${g.price_fen !== null && g.price_fen !== undefined ? `<div class="detail-line"><dt>价格</dt><dd>¥ ${e(D.formatPrice(g.price_fen))}</dd></div>` : ''}</dl>${g.note ? `<section class="note-card"><p>${e(g.note)}</p></section>` : ''}<button class="danger-button" data-action="delete-gift">删除这条记录</button>`;
   }
   async function me(version) {
     const data = await api('/me');
@@ -298,15 +283,14 @@
     const [path, queryString] = raw.split('?');
     const [view, id] = path.split('/');
     const query = new URLSearchParams(queryString || '');
+    document.body.classList.toggle('sheet-open', ['person-new', 'person-edit', 'record', 'gift-edit'].includes(view));
     if (dialog.open) dialog.close();
     window.scrollTo(0, 0);
     if (!token || view === 'welcome') {
       welcome();
       return;
     }
-    app.innerHTML =
-      top() +
-      `<p class="loading-label">正在打开礼物簿…</p><div class="load-card"></div><div class="load-card"></div>`;
+    app.innerHTML = top() + '<p class="loading-label">正在打开礼物簿…</p>';
     hideTabs();
     try {
       if (!user) {
@@ -357,6 +341,23 @@
     if (token) api('/events', 'POST', { event, properties }).catch(() => {});
   }
   async function action(name, button) {
+    if (name === 'sheet-expand') { button.closest('.form-sheet')?.classList.toggle('full'); return; }
+    if (name === 'person-menu') {
+      const id = current?.person?.id;
+      if (id) openDialog(`<h2>${e(current.person.display_name)}</h2><div class="gift-menu"><button data-go="person-edit/${e(id)}">编辑 TA</button><button data-action="sort-hint">调整顺序</button><button data-action="delete-current-person">删除 TA</button></div>`);
+      return;
+    }
+    if (name === 'sort-hint') { dialog.close(); toast('长按上方 TA 并拖动排序'); return; }
+    if (name === 'delete-current-person') {
+      const person = current?.person;
+      if (!person) return;
+      dialog.close();
+      confirmAction(`删除 ${person.display_name}？`, 'TA 的资料和所有礼物记录会一起删除，无法恢复。', '删除 TA', async () => {
+        await api('/recipients/' + person.id, 'DELETE');
+        nav('home'); toast('已删除 TA');
+      });
+      return;
+    }
     if (name === 'close-dialog') {
       dialog.close();
       return;
@@ -497,7 +498,7 @@
     }
     if (name === 'nickname') {
       openDialog(
-        `<h2>修改昵称</h2><form data-form="nickname" novalidate>${inputField('昵称', 'display_name', user.display_name, '你想用的昵称', 40)}<div id="dialog-error" class="error" role="alert"></div><div class="dialog-actions"><button type="button" class="secondary" data-action="close-dialog">取消</button><button type="submit" class="primary">保存昵称</button></div></form>`
+        `<h2>修改昵称</h2><form data-form="nickname" novalidate>${inputField('昵称', 'display_name', user.display_name, '你想用的昵称', 20)}<div id="dialog-error" class="error" role="alert"></div><div class="dialog-actions"><button type="button" class="secondary" data-action="close-dialog">取消</button><button type="submit" class="primary">保存昵称</button></div></form>`
       );
       dialog.querySelector('input').focus();
       return;
@@ -522,15 +523,33 @@
       return;
     }
     event.preventDefault();
+    sortState.x = x;
     const tabs = [...app.querySelectorAll('.recipient-tab')];
     const target = tabs.find((tab) => x < tab.getBoundingClientRect().left + tab.getBoundingClientRect().width / 2) || tabs.at(-1);
     if (target) sortState.target = target.dataset.recipientId;
     tabs.forEach((tab) => tab.classList.toggle('sort-target', tab.dataset.recipientId === sortState.target && sortState.target !== sortState.id));
+    if (!sortState.frame) sortState.frame = requestAnimationFrame(autoSortScroll);
+  }
+  function autoSortScroll() {
+    if (!sortState?.active) return;
+    const scroll = app.querySelector('.recipient-scroll');
+    if (!scroll) return;
+    const rect = scroll.getBoundingClientRect();
+    const direction = sortState.x < rect.left + 32 ? -1 : sortState.x > rect.right - 32 ? 1 : 0;
+    if (direction) {
+      scroll.scrollLeft += direction * 8;
+      const tabs = [...scroll.querySelectorAll('.recipient-tab')];
+      const target = tabs.find((tab) => sortState.x < tab.getBoundingClientRect().left + tab.getBoundingClientRect().width / 2) || tabs.at(-1);
+      if (target) sortState.target = target.dataset.recipientId;
+      tabs.forEach((tab) => tab.classList.toggle('sort-target', tab.dataset.recipientId === sortState.target && sortState.target !== sortState.id));
+      sortState.frame = requestAnimationFrame(autoSortScroll);
+    } else sortState.frame = null;
   }
   async function finishSort() {
     clearTimeout(sortTimer);
     const state = sortState;
     sortState = null;
+    if (state?.frame) cancelAnimationFrame(state.frame);
     if (!state?.active) return;
     setTimeout(() => { suppressTabClick = false; }, 0);
     const old = current.people.slice(), from = old.findIndex((p) => p.id === state.id), to = old.findIndex((p) => p.id === state.target);
@@ -553,6 +572,19 @@
     }
   }
   document.addEventListener('touchstart', (event) => {
+    const gift = event.target.closest('.log-entry');
+    if (gift) {
+      const touch = event.touches[0];
+      giftTouch = { gift, x: touch.clientX, y: touch.clientY, moved: false };
+      giftTouch.timer = setTimeout(() => {
+        if (giftTouch?.gift === gift && !giftTouch.moved) {
+          suppressGiftClick = true;
+          action('gift-menu', { dataset: { id: gift.dataset.giftId } });
+          setTimeout(() => { suppressGiftClick = false; }, 500);
+        }
+      }, 520);
+      return;
+    }
     const tab = event.target.closest('.recipient-tab');
     if (!tab) return;
     event.preventDefault();
@@ -561,6 +593,15 @@
     beginSort(touchState.id, x);
   }, { passive: false });
   document.addEventListener('touchmove', (event) => {
+    if (giftTouch) {
+      const touch = event.touches[0], dx = touch.clientX - giftTouch.x, dy = touch.clientY - giftTouch.y;
+      if (Math.abs(dx) > 12 || Math.abs(dy) > 12) { giftTouch.moved = true; clearTimeout(giftTouch.timer); }
+      if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) {
+        event.preventDefault();
+        giftTouch.gift.classList.toggle('swiped', dx < 0);
+      }
+      return;
+    }
     if (!touchState) return;
     event.preventDefault();
     const x = event.touches[0].clientX;
@@ -573,6 +614,7 @@
     }
   }, { passive: false });
   document.addEventListener('touchend', () => {
+    if (giftTouch) { clearTimeout(giftTouch.timer); giftTouch = null; return; }
     const touch = touchState;
     touchState = null;
     if (!touch) return;
@@ -583,7 +625,11 @@
       if (!touch.moved) selectRecipient(touch.id).catch(showError);
     }
   });
-  document.addEventListener('touchcancel', () => { clearTimeout(sortTimer); touchState = null; sortState = null; });
+  document.addEventListener('touchcancel', () => { clearTimeout(sortTimer); clearTimeout(giftTouch?.timer); giftTouch = null; touchState = null; if (sortState?.frame) cancelAnimationFrame(sortState.frame); sortState = null; });
+  document.addEventListener('contextmenu', (event) => {
+    const gift = event.target.closest('.log-entry');
+    if (gift) { event.preventDefault(); if (!dialog.open) action('gift-menu', { dataset: { id: gift.dataset.giftId } }); }
+  });
   document.addEventListener('mousedown', (event) => {
     const tab = event.target.closest('.recipient-tab');
     if (tab) beginSort(tab.dataset.recipientId, event.clientX);
@@ -592,7 +638,12 @@
   document.addEventListener('mouseup', finishSort);
   document.addEventListener('click', (event) => {
     const button = event.target.closest('button');
-    if (!button || button.disabled) return;
+    if (!button) {
+      const gift = event.target.closest('.log-entry');
+      if (gift && !gift.classList.contains('swiped') && !suppressGiftClick) nav('gift/' + gift.dataset.giftId);
+      return;
+    }
+    if (button.disabled) return;
     if (button.dataset.recipientId) {
       if (suppressTabClick) { suppressTabClick = false; return; }
       selectRecipient(button.dataset.recipientId).catch(showError);
@@ -697,6 +748,7 @@
     }
   });
   window.addEventListener('hashchange', render);
+  window.addEventListener('scroll', () => app.classList.toggle('book-scrolled', current?.type === 'home' && scrollY > 14), { passive: true });
   window.addEventListener('storage', (event) => {
     if (event.key === TOKEN_KEY && event.newValue !== token) {
       token = event.newValue || '';

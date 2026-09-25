@@ -4,7 +4,7 @@ const REACTIONS = [
   { value: 2, label: '还不错' },
   { value: 3, label: '喜欢' },
   { value: 4, label: '很喜欢' },
-  { value: 5, label: '超级喜欢' }
+  { value: 5, label: '特别喜欢' }
 ];
 const RELATIONS = ['恋人', '配偶', '家人', '朋友', '同事', '领导', '客户', '其他'];
 const AGE_BUCKETS = ['≤17', '18–22', '23–25', '26–30', '31–35', '36–40', '41–50', '51–60', '60+'];
@@ -113,9 +113,9 @@ function giftLog(gifts) {
     const year = gift.gifted_at.slice(0, 4);
     const entry = {
       ...gift,
-      log_date: gift.gifted_at.slice(5).replace('-', '.'),
+      log_date: `${gift.gifted_at.slice(5, 7)}月${gift.gifted_at.slice(8, 10)}日`,
       log_year: year === previousYear ? '' : year,
-      log_meta: [gift.occasion, gift.price_fen == null ? '' : `约 ¥${formatPrice(gift.price_fen)}`].filter(Boolean).join(' · '),
+      log_meta: [gift.occasion, gift.price_fen == null ? '' : `¥${formatPrice(gift.price_fen)}`].filter(Boolean).join(' · '),
       log_reaction: reaction(gift.reaction_level).label
     };
     previousYear = year;

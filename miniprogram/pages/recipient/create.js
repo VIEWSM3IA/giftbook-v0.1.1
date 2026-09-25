@@ -90,6 +90,7 @@ Page({
     this.setData({ busy: true, error: '' });
     try {
       await store.request('/v1/recipients/' + this.id, 'DELETE');
+      if (wx.vibrateShort) wx.vibrateShort({ type: 'light' });
       wx.reLaunch({ url: '/pages/giftbook/index' });
     } catch (error) {
       this.setData({ error: error.message });

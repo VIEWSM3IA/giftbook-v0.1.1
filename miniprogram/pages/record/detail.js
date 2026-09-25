@@ -35,6 +35,7 @@ Page({
     this.setData({ busy: true, error: '' });
     try {
       await store.request('/v1/gifts/' + this.id, 'DELETE');
+      if (wx.vibrateShort) wx.vibrateShort({ type: 'light' });
       wx.reLaunch({ url: '/pages/giftbook/index?recipient_id=' + this.data.gift.recipient_id });
     } catch (e) {
       this.setData({ error: e.message });

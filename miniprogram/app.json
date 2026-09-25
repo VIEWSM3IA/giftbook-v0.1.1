@@ -2,18 +2,16 @@
   "pages": [
     "pages/giftbook/index",
     "pages/login/index",
-    "pages/record/index",
     "pages/recipient/create",
-    "pages/recipient/detail",
     "pages/record/create",
     "pages/record/detail",
     "pages/me/index"
   ],
   "window": {
     "navigationBarTitleText": "礼物簿",
-    "navigationBarBackgroundColor": "#F7F4EF",
+    "navigationBarBackgroundColor": "#F7F7F9",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F7F4EF"
+    "backgroundColor": "#F7F7F9"
   },
   "sitemapLocation": "sitemap.json"
 }
