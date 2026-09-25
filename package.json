@@ -1,0 +1,17 @@
+{
+  "name": "giftbook-wechat-miniprogram",
+  "version": "0.1.1",
+  "private": true,
+  "scripts": {
+    "check": "node scripts/check-project.js",
+    "test": "node --test",
+    "preview:h5": "NODE_ENV=development ALLOW_LOCAL_LOGIN=true node scripts/serve-h5.js",
+    "check:h5": "node scripts/check-h5.cjs",
+    "dev:db": "bash server/dev-db.sh",
+    "db:migrate": "node server/db.js",
+    "test:api": "node --test test/api.test.js"
+  },
+  "dependencies": {
+    "pg": "^8.23.0"
+  }
+}

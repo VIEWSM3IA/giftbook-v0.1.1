@@ -1,0 +1,16 @@
+{
+  "appid": "touristappid",
+  "projectname": "giftbook-wechat-miniprogram",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "miniprogram/",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": false,
+    "urlCheck": false,
+    "coverView": true,
+    "checkSiteMap": true
+  },
+  "condition": {}
+}

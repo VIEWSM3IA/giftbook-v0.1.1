@@ -1,0 +1,13 @@
+[Unit]
+Description=Giftbook acceptance PostgreSQL
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/postgresql/17/bin/postgres -D %h/.local/share/giftbook-v01-postgres -h 127.0.0.1 -p 55437 -k %h/.local/share/giftbook-v01-postgres
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target

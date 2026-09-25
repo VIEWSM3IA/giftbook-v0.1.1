@@ -1,0 +1,9 @@
+project.private.config.json
+node_modules/
+deliverables/
+.DS_Store
+*.log
+
+.env
+.env.*
+!.env.example

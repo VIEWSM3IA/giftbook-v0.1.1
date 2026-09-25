@@ -1,0 +1,22 @@
+[Unit]
+Description=Giftbook H5 acceptance origin
+Requires=giftbook-db.service
+After=giftbook-db.service network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/VC/project_1
+Environment=NODE_ENV=development
+Environment=ALLOW_LOCAL_LOGIN=true
+Environment=HOST=127.0.0.1
+Environment=PORT=43117
+Environment=PUBLIC_PREVIEW=true
+Environment=PREVIEW_PUBLIC_ORIGIN=https://giftbook.91341117.xyz
+EnvironmentFile=%h/.config/giftbook/access.env
+ExecStart=%h/.local/bin/node %h/VC/project_1/scripts/serve-h5.js
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,30 @@
+<view class="book-page">
+  <view class="book-header">
+    <button class="account-avatar" bindtap="account" aria-label="账号与设置"><image wx:if="{{avatarKey}}" src="{{avatarKey}}" mode="aspectFill"/><text wx:else>{{avatarText}}</text></button>
+    <text class="book-title">礼物簿</text><view class="header-space"></view>
+  </view>
+  <view wx:if="{{error}}" class="book-error" role="alert">{{error}}<button bindtap="load">重试</button></view>
+  <view wx:if="{{loading}}" class="book-empty">正在打开礼物簿…</view>
+  <block wx:elif="{{!error}}">
+    <view wx:if="{{!recipients.length}}" class="book-empty"><view class="empty-title">还没有 TA</view><button class="empty-action" bindtap="create">添加第一个 TA</button></view>
+    <block wx:else>
+      <view class="recipient-switcher">
+        <scroll-view class="recipient-scroll" scroll-x="{{!sortingId}}" scroll-into-view="{{activeTabId}}" scroll-with-animation="true" enable-flex="true">
+          <view class="recipient-tabs"><button wx:for="{{recipients}}" wx:key="id" id="recipient-{{item.id}}" class="recipient-tab {{active.id === item.id ? 'active' : ''}} {{sortingId === item.id ? 'sorting' : ''}} {{targetId === item.id &amp;&amp; sortingId !== item.id ? 'target' : ''}}" data-id="{{item.id}}" bindtap="select" bindlongpress="longPress" bindtouchmove="dragMove" bindtouchend="dragEnd">{{item.display_name}}</button></view>
+        </scroll-view>
+        <button class="recipient-add" bindtap="create" aria-label="添加 TA">＋ TA</button>
+      </view>
+      <view class="recipient-summary"><view><view class="summary-name">{{active.display_name}}</view><view class="summary-meta">{{active.relation_type}}{{active.age_range ? ' · ' + active.age_range + ' 岁' : ''}}</view></view><button class="edit-link" bindtap="edit">编辑</button></view>
+      <view wx:if="{{active.tags.length}}" class="tag-line"><text wx:for="{{active.tags}}" wx:key="*this">{{index ? ' · ' : ''}}{{item}}</text></view>
+      <view wx:if="{{sortingId}}" class="sort-hint">拖到另一位 TA 的位置调整顺序</view>
+      <view class="gift-log">
+        <view wx:if="{{loadingLog &amp;&amp; !gifts.length}}" class="log-empty">正在读取记录…</view>
+        <view wx:if="{{logError}}" class="book-error">{{logError}}<button bindtap="load">重试</button></view>
+        <view wx:if="{{!loadingLog &amp;&amp; !gifts.length &amp;&amp; !logError}}" class="log-empty"><view>还没有记录</view><text>给 {{active.display_name}} 记下第一份礼物。</text><button bindtap="add">记一份礼物</button></view>
+        <view wx:for="{{gifts}}" wx:key="id" class="log-entry"><view class="log-date"><text class="day">{{item.log_date}}</text><text wx:if="{{item.log_year}}" class="year">{{item.log_year}}</text></view><view class="log-body"><view class="log-title-row"><text class="log-title">{{item.gift_name}}</text><button class="log-more" data-id="{{item.id}}" bindtap="giftActions" aria-label="{{item.gift_name}}更多操作">•••</button></view><view wx:if="{{item.log_meta}}" class="log-meta">{{item.log_meta}}</view><view class="log-reaction">{{item.log_reaction}}</view><view wx:if="{{item.note}}" class="log-note">{{item.note}}</view></view></view>
+        <button wx:if="{{cursor}}" class="load-more" bindtap="more" disabled="{{loadingLog}}">更早的记录</button>
+      </view>
+      <button class="gift-fab" bindtap="add">＋ 记一份礼物</button>
+    </block>
+  </block>
+</view>
