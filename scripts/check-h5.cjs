@@ -107,11 +107,15 @@ const previewPassword = process.env.PREVIEW_ACCESS_PASSWORD || '';
     assert.equal(await page.locator('.log-date span').count(), 2);
     const olderGiftId = (await call('/recipients/' + roseId + '/gifts')).data.items[1].id;
     await page.locator('#toast.show').waitFor({ state: 'hidden' });
+    await page.route('**/v1/gifts/' + giftId, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.continue();
+    }, { times: 1 });
     await page.locator('.log-entry').first().click();
     await page.waitForURL(base + '/#gift/' + giftId);
-    await page.getByRole('heading', { name: '拍立得', exact: true }).waitFor();
+    await page.locator('.record-hero .detail-title').getByText('拍立得', { exact: true }).waitFor();
     const detailUrl = page.url();
-    await click('编辑');
+    await page.locator('[data-action="edit-detail-gift"]').click();
     assert.equal(page.url(), detailUrl);
     await page.locator('#detail-sheet .form-sheet').waitFor();
     assert.equal(await page.getByLabel('礼物', { exact: true }).inputValue(), '拍立得');
