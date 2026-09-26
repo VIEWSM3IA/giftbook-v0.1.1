@@ -37,6 +37,8 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run seed:v03
+      - run: npm run report:v03:seed
+      - run: git diff --exit-code docs/v03-seed-distribution.md
       - name: Start H5 preview
         run: |
           node scripts/serve-h5.js > /tmp/giftbook-h5.log 2>&1 &

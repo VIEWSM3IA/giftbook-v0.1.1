@@ -20,7 +20,7 @@ async function importSeed(db = pool, env = process.env) {
            gift_name=EXCLUDED.gift_name,relation_type=EXCLUDED.relation_type,age_range=EXCLUDED.age_range,
            occasion=EXCLUDED.occasion,price_range=EXCLUDED.price_range,wanted_level=EXCLUDED.wanted_level,
            reaction_level=EXCLUDED.reaction_level,behavior_evidence=EXCLUDED.behavior_evidence,
-           experience=EXCLUDED.experience`,
+           experience=EXCLUDED.experience,status='published',updated_at=now()`,
         [randomUUID(), item.seed_key, item.gift_name, item.relation_type, item.age_range, item.occasion,
           item.price_range, item.wanted_level, item.reaction_level, item.behavior_evidence, item.experience]
       );

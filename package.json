@@ -11,6 +11,7 @@
     "dev:db": "bash server/dev-db.sh",
     "db:migrate": "node server/db.js",
     "seed:v03": "node scripts/seed-v03.js",
+    "report:v03:seed": "node scripts/report-v03-seed.js",
     "test:api": "node --test test/api.test.js"
   },
   "dependencies": {

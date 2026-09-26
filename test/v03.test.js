@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const { Pool } = require('pg');
 const { createApi } = require('../server/app');
 const { importSeed } = require('../scripts/seed-v03');
+const seedCases = require('../data/seed_cases_v03.json');
 const { matchCase, sortMatches } = require('../server/matching');
 const domain = require('../miniprogram/utils/domain');
 
@@ -41,6 +42,12 @@ test('V0.3 seed, source boundary, saved gift ownership and atomic conversion', a
   await assert.rejects(importSeed(pool, { NODE_ENV: 'production' }), /requires ALLOW_INTERNAL_MOCK_IMPORT/);
   assert.equal(await importSeed(pool, { NODE_ENV: 'development' }), 120);
   assert.equal(await importSeed(pool, { NODE_ENV: 'development' }), 120);
+  await pool.query("UPDATE public_cases SET status='removed',gift_name='corrupted',updated_at='2000-01-01' WHERE seed_key=$1", [seedCases[0].seed_key]);
+  assert.equal(await importSeed(pool, { NODE_ENV: 'development' }), 120);
+  const restored = (await pool.query('SELECT status,gift_name,updated_at FROM public_cases WHERE seed_key=$1', [seedCases[0].seed_key])).rows[0];
+  assert.equal(restored.status, 'published');
+  assert.equal(restored.gift_name, seedCases[0].gift_name);
+  assert.ok(new Date(restored.updated_at).getFullYear() > 2000);
   assert.equal(Number((await pool.query("SELECT count(*) FROM public_cases WHERE source_type='internal_mock'")).rows[0].count), 120);
   for (const [field, expected] of [['relation_type',8],['age_range',8],['occasion',6],['price_range',6]])
     assert.equal(Number((await pool.query(`SELECT count(DISTINCT ${field}) AS count FROM public_cases WHERE source_type='internal_mock'`)).rows[0].count), expected);
@@ -72,6 +79,20 @@ test('V0.3 seed, source boundary, saved gift ownership and atomic conversion', a
     assert.deepEqual((await req(dev,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,a.token)).items, first.items);
   const mock = first.items[0].case;
   assert.equal(mock.source_type,'internal_mock');
+  const verifiedId = randomUUID();
+  await pool.query(
+    `INSERT INTO public_cases(id,seed_key,source_type,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,status)
+     SELECT $1,'v03_verified_test','verified_seed',gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,'published'
+     FROM public_cases WHERE id=$2`, [verifiedId,mock.id]
+  );
+  const visibleSeeds = (await req(dev,'GET','/v1/cases',a.token)).items.filter((item) => item.source_type !== 'user_generated');
+  assert.ok(visibleSeeds.length > 0);
+  assert.ok(visibleSeeds.every((item) => item.is_mine === false && typeof item.is_mine === 'boolean'));
+  for (const id of [mock.id, verifiedId]) {
+    const detail = await req(dev,'GET',`/v1/cases/${id}`,a.token);
+    assert.equal(detail.is_mine,false);
+    assert.equal(typeof detail.is_mine,'boolean');
+  }
   for (const key of ['owner_id','source_gift_id','recipient_id','note','price_fen']) assert.equal(Object.hasOwn(mock,key),false);
   assert.ok(first.items[0].match_reasons.includes('同场景'));
   assert.equal((await req(prod,'GET','/v1/cases',a.token)).items.some((item) => item.id === mock.id),false);
@@ -93,6 +114,14 @@ test('V0.3 seed, source boundary, saved gift ownership and atomic conversion', a
   const removed = await req(dev,'POST','/v1/saved-gifts',a.token,{ ...saveInput, source_case_id: second.id });
   await req(dev,'DELETE',`/v1/saved-gifts/${removed.id}`,a.token);
   assert.equal((await req(dev,'GET',`/v1/recipients/${person.id}/saved-gifts`,a.token)).length,1);
+  const voter = await req(dev,'POST','/v1/auth/local/login',null,{ device_key:randomBytes(32).toString('hex') });
+  for (const id of [mock.id, verifiedId]) {
+    assert.equal((await req(dev,'POST',`/v1/cases/${id}/helpful`,voter.token,{})).helpful_count,1);
+  }
+  await req(dev,'DELETE','/v1/me',voter.token);
+  assert.equal(Number((await pool.query('SELECT count(*) FROM case_helpful WHERE user_id=$1',[voter.user.id])).rows[0].count),0);
+  for (const id of [mock.id, verifiedId])
+    assert.equal((await req(dev,'GET',`/v1/cases/${id}`,a.token)).helpful_count,0);
   await pool.query("UPDATE public_cases SET status='removed' WHERE id=$1", [mock.id]);
   await req(dev,'GET',`/v1/cases/${mock.id}`,a.token,null,404);
   const snapshot = (await req(dev,'GET',`/v1/recipients/${person.id}/saved-gifts`,a.token))[0];
@@ -110,6 +139,8 @@ test('V0.3 seed, source boundary, saved gift ownership and atomic conversion', a
   assert.equal((await req(dev,'GET',`/v1/recipients/${person.id}/gifts`,a.token)).items[0].id,gift.id);
   const shared = await req(dev,'POST','/v1/cases',a.token,{ source_gift_id:gift.id,gift_name:gift.gift_name,relation_type:'恋人',age_range:'26–30',occasion:'生日',price_range:'500–999',wanted_level:'没提过',reaction_level:4,behavior_evidence:['used_immediately'],experience:'送出后马上用了' });
   assert.equal(shared.source_type,'user_generated');
+  assert.equal((await req(dev,'POST',`/v1/cases/${shared.id}/helpful`,a.token,{},400)).error.code,'OWN_CASE');
+  assert.equal((await req(dev,'GET',`/v1/cases/${shared.id}`,a.token)).helpful_count,0);
   assert.equal((await req(prod,'GET',`/v1/cases/${shared.id}`,a.token)).id,shared.id);
   assert.equal((await req(prod,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,a.token)).items.some((item) => item.case.id === shared.id),true);
   const negativeShare = await req(dev,'PATCH',`/v1/cases/${shared.id}`,a.token,{ source_gift_id:gift.id,gift_name:gift.gift_name,relation_type:'恋人',age_range:'26–30',occasion:'生日',price_range:'500–999',wanted_level:'没提过',reaction_level:2,behavior_evidence:['polite_thanks_only'],experience:'只礼貌地说了谢谢' });

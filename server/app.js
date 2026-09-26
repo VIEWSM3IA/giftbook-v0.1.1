@@ -351,7 +351,7 @@ function createApi(options = {}) {
           data = publicRow((await pool.query('UPDATE users SET last_active_recipient_id=$1,updated_at=now() WHERE id=$2 RETURNING *', [input.recipient_id, userId])).rows[0]);
         } else if (method === 'DELETE' && route === '/v1/me') {
           await transaction(pool, async (db) => {
-            await db.query('UPDATE public_cases c SET helpful_count=GREATEST(0,c.helpful_count-votes.n) FROM (SELECT case_id,count(*)::integer AS n FROM case_helpful WHERE user_id=$1 GROUP BY case_id) votes WHERE c.id=votes.case_id AND c.owner_id<>$1', [userId]);
+            await db.query('UPDATE public_cases c SET helpful_count=GREATEST(0,c.helpful_count-votes.n) FROM (SELECT case_id,count(*)::integer AS n FROM case_helpful WHERE user_id=$1 GROUP BY case_id) votes WHERE c.id=votes.case_id AND (c.owner_id IS NULL OR c.owner_id<>$1)', [userId]);
             await db.query('DELETE FROM users WHERE id=$1', [userId]);
           });
           data = null;
@@ -365,7 +365,7 @@ function createApi(options = {}) {
         } else if (method === 'GET' && route === '/v1/cases') {
           const { clauses, values, offset } = caseFilters(url.searchParams);
           const rows = (await pool.query(
-            `SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},c.owner_id=$${values.length + 2} AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$${values.length + 2}) AS helped FROM public_cases c WHERE c.status='published' AND c.source_type=ANY($${values.length + 1}::text[])${clauses.length ? ' AND ' + clauses.join(' AND ') : ''} ORDER BY c.created_at DESC,c.id DESC LIMIT 21 OFFSET $${values.length + 3}`,
+            `SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},COALESCE(c.owner_id=$${values.length + 2},false) AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$${values.length + 2}) AS helped FROM public_cases c WHERE c.status='published' AND c.source_type=ANY($${values.length + 1}::text[])${clauses.length ? ' AND ' + clauses.join(' AND ') : ''} ORDER BY c.created_at DESC,c.id DESC LIMIT 21 OFFSET $${values.length + 3}`,
             [...values, visibleCaseSources(env), userId, offset]
           )).rows;
           data = { items: rows.slice(0, 20), next_offset: rows.length > 20 ? offset + 20 : null };
@@ -402,7 +402,7 @@ function createApi(options = {}) {
         } else if (/^\/v1\/cases\/[^/]+$/.test(route)) {
           const id = uuid(route.split('/')[3]);
           if (method === 'GET') {
-            const row = (await pool.query(`SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},c.owner_id=$2 AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$2) AS helped FROM public_cases c WHERE c.id=$1 AND c.status='published' AND c.source_type=ANY($3::text[])`, [id,userId,visibleCaseSources(env)])).rows[0];
+            const row = (await pool.query(`SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},COALESCE(c.owner_id=$2,false) AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$2) AS helped FROM public_cases c WHERE c.id=$1 AND c.status='published' AND c.source_type=ANY($3::text[])`, [id,userId,visibleCaseSources(env)])).rows[0];
             if (!row) missing();
             data = row;
             if (row.source_type !== 'internal_mock') emit('case_opened', { is_mine: row.is_mine });
