@@ -41,7 +41,7 @@ npm run preview:h5 -- 43117
 - `miniprogram/utils/domain.js`：三端共用的字段校验、枚举、金额与日期规则。
 - `server/`：单体 API、短期会话、微信身份交换、私有资源授权。
 - `migrations/001_v01.sql` 至 `005_v03_find_for_ta.sql`：保留原记录，增加公开案例来源分层、想送与结构化行为证据；迁移可重复执行。
-- `data/seed_cases_v03.json`、`npm run seed:v03`：幂等导入 120 条仅供开发验收的 `internal_mock` 案例；生产环境默认拒绝导入且公开 API 排除模拟案例。
+- `data/seed_cases_v03.json`、`npm run seed:v03`：幂等导入 120 条仅供开发验收的 `internal_mock` 案例；生产环境默认拒绝导入且公开 API 排除模拟案例。当前固定公网预览服务仍运行 V0.2 进程；在它升级到 V0.3 前，不要向其共用数据库导入模拟案例。
 - `h5/`：与原生端一致的功能，使用同源 API。
 - [V0.1.1 交付契约](docs/v011-contract.md)：首页结构、交互、持久化与回退。
 - [V0.2 交付契约](docs/v02-contract.md)：匿名分享、公开字段、审核、管理与数据边界。
@@ -54,6 +54,7 @@ npm run preview:h5 -- 43117
 npm ci
 npm run check
 npm test
+# 仅在隔离开发数据库，或固定公网预览已升级到 V0.3 后执行
 npm run seed:v03
 # 另一个终端启动本地 H5，随后运行浏览器验收
 npm run preview:h5
