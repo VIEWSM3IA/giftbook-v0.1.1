@@ -32,12 +32,13 @@ test('V0.1 records survive V0.2 migration with stable recipient order', async (t
   await pool.query("INSERT INTO public_cases(id,owner_id,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior,experience,status) VALUES($1,$2,'旧记录二','恋人','26–30','生日','0–100','没提过',2,'当天忘了用，一直闲置','','removed')", [ambiguousCaseId,userId]);
   const beforeCount = Number((await pool.query('SELECT count(*) FROM public_cases')).rows[0].count);
   await migrate(pool);
-  const migrated = (await pool.query('SELECT behavior_legacy,behavior_evidence,price_range,legacy_price_range FROM public_cases WHERE id=$1', [caseId])).rows[0];
+  const migrated = (await pool.query('SELECT behavior_legacy,behavior_evidence,price_range,legacy_price_range,source_type FROM public_cases WHERE id=$1', [caseId])).rows[0];
   assert.equal(Number((await pool.query('SELECT count(*) FROM public_cases')).rows[0].count), beforeCount);
   assert.equal(migrated.behavior_legacy, '当天就用了，后来分享朋友圈');
   assert.deepEqual(migrated.behavior_evidence, ['used_immediately', 'shared_with_others']);
   assert.equal(migrated.price_range, '500–1000');
   assert.equal(migrated.legacy_price_range, '500–1000');
+  assert.equal(migrated.source_type, 'user_generated');
   assert.deepEqual((await pool.query('SELECT behavior_evidence,legacy_price_range FROM public_cases WHERE id=$1', [negativeCaseId])).rows[0], { behavior_evidence: ['legacy_observed'], legacy_price_range: '1500+' });
   assert.deepEqual((await pool.query('SELECT behavior_evidence,legacy_price_range FROM public_cases WHERE id=$1', [ambiguousCaseId])).rows[0], { behavior_evidence: ['legacy_observed'], legacy_price_range: '0–100' });
   await assert.rejects(pool.query("UPDATE public_cases SET behavior_evidence=ARRAY['used_immediately','used_immediately'] WHERE id=$1", [caseId]), /public_cases_evidence_valid/);

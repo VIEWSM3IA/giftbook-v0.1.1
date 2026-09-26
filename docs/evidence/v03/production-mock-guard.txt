@@ -1,0 +1,19 @@
+NODE_ENV=production npm run seed:v03
+
+> giftbook-wechat-miniprogram@0.3.0 seed:v03
+> node scripts/seed-v03.js
+
+Production internal_mock import requires ALLOW_INTERNAL_MOCK_IMPORT=true
+expected-denial exit=1
+
+node --test test/v03.test.js
+✔ V0.3 matching scores are deterministic and preserve negative outcomes (12.005774ms)
+✔ V0.3 seed, source boundary, saved gift ownership and atomic conversion (508.97386ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 609.372321

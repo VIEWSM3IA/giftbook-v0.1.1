@@ -74,7 +74,7 @@ if (JSON.stringify(app.tabBar?.list?.map(({ pagePath, text }) => [pagePath, text
   errors.push('V0.2 底部导航应为礼物簿和看看');
 if ((app.subpackages || []).length) errors.push('V0.1 不应注册未来功能分包');
 for (const file of [...walk(mini).filter((name) => name.endsWith('.wxml')), path.join(root, 'h5/app.js')]) {
-  if (/推荐|收藏|回访|成就|敬请期待/.test(fs.readFileSync(file, 'utf8')))
+  if (/推荐|回访|成就|敬请期待/.test(fs.readFileSync(file, 'utf8')))
     errors.push(`${path.relative(root, file)} 存在范围外产品入口或文案`);
 }
 for (const file of [...walk(mini).filter((name) => /\.wxss$/.test(name)), path.join(root, 'h5/styles.css')]) {

@@ -1,0 +1,27 @@
+{
+  "id": "2d733e71-9edd-49d9-ba9c-7a057b979566",
+  "recipient_id": "8e98b809-cac2-43c7-ad0c-f0c359060a9c",
+  "source_case_id": "281b3e50-ada2-484b-a4d6-a813f18eb206",
+  "gift_name": "围巾",
+  "source_snapshot": {
+    "occasion": "生日",
+    "age_range": "23–25",
+    "gift_name": "围巾",
+    "price_range": "100–299",
+    "source_type": "internal_mock",
+    "relation_type": "恋人",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ]
+  },
+  "intended_occasion": "生日",
+  "intended_price_range": "500–999",
+  "status": "saved",
+  "linked_gift_id": null,
+  "created_at": "2026-09-26T06:41:29.800Z",
+  "updated_at": "2026-09-26T06:41:29.800Z",
+  "source_available": true
+}

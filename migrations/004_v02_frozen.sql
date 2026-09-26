@@ -32,12 +32,15 @@ END $$;
 ALTER TABLE public_cases DROP CONSTRAINT IF EXISTS public_cases_evidence_valid;
 ALTER TABLE public_cases ADD CONSTRAINT public_cases_evidence_valid CHECK (
   cardinality(behavior_evidence) BETWEEN 1 AND 5 AND
-  behavior_evidence <@ ARRAY['happy_on_receive','used_immediately','used_repeatedly','mentioned_later','shared_with_others','legacy_observed']::text[] AND
+  behavior_evidence <@ ARRAY['happy_on_receive','used_immediately','used_repeatedly','mentioned_later','shared_with_others','polite_thanks_only','rarely_used','returned_or_exchanged','legacy_observed']::text[] AND
   (NOT behavior_evidence @> ARRAY['legacy_observed']::text[] OR behavior_legacy IS NOT NULL) AND
   cardinality(array_positions(behavior_evidence,'happy_on_receive')) <= 1 AND
   cardinality(array_positions(behavior_evidence,'used_immediately')) <= 1 AND
   cardinality(array_positions(behavior_evidence,'used_repeatedly')) <= 1 AND
   cardinality(array_positions(behavior_evidence,'mentioned_later')) <= 1 AND
   cardinality(array_positions(behavior_evidence,'shared_with_others')) <= 1 AND
+  cardinality(array_positions(behavior_evidence,'polite_thanks_only')) <= 1 AND
+  cardinality(array_positions(behavior_evidence,'rarely_used')) <= 1 AND
+  cardinality(array_positions(behavior_evidence,'returned_or_exchanged')) <= 1 AND
   cardinality(array_positions(behavior_evidence,'legacy_observed')) <= 1
 );

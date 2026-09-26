@@ -1,6 +1,6 @@
-# 礼物簿 V0.2
+# 礼物簿 V0.3
 
-围绕一个人记录送礼经历，并把选定的真实记录匿名分享给其他人参考。包含原生微信小程序、H5 验收预览与 PostgreSQL API；V0.2 新增「礼物簿 / 看看」双入口、匿名案例、筛选、详情、有帮助及我的分享管理。不包含推荐、收藏、AI、评论或社交功能。
+围绕一个人记录送礼经历，从案例里找礼物并保存给 TA，送出后转成私人记录，还可匿名分享。包含原生微信小程序、H5 验收预览与 PostgreSQL API。V0.3 的匹配使用固定规则并展示理由；不含 AI、购买或社交功能。
 
 ## 固定公网验收地址
 
@@ -40,20 +40,25 @@ npm run preview:h5 -- 43117
 
 - `miniprogram/utils/domain.js`：三端共用的字段校验、枚举、金额与日期规则。
 - `server/`：单体 API、短期会话、微信身份交换、私有资源授权。
-- `migrations/001_v01.sql` 至 `004_v02_frozen.sql`：保留原记录，并增加公开案例、结构化行为证据与历史字段；迁移可重复执行。
+- `migrations/001_v01.sql` 至 `005_v03_find_for_ta.sql`：保留原记录，增加公开案例来源分层、想送与结构化行为证据；迁移可重复执行。
+- `data/seed_cases_v03.json`、`npm run seed:v03`：幂等导入 120 条仅供开发验收的 `internal_mock` 案例；生产环境默认拒绝导入且公开 API 排除模拟案例。
 - `h5/`：与原生端一致的功能，使用同源 API。
 - [V0.1.1 交付契约](docs/v011-contract.md)：首页结构、交互、持久化与回退。
 - [V0.2 交付契约](docs/v02-contract.md)：匿名分享、公开字段、审核、管理与数据边界。
+- [V0.3 交付契约](docs/v03-contract.md)：找礼物、规则匹配、想送和转成私人记录。
 - [验收记录](docs/verification.md)：实际运行的检查及未验证边界。
 - [V0.2 收口报告](docs/v02-freeze-report.md)：本轮验证、证据及尚未完成的原生编译门禁。
+- [V0.3 验收记录](docs/v03-freeze-report.md)：本轮测试、证据和待完成的发布门禁。
 
 ```bash
 npm ci
 npm run check
 npm test
+npm run seed:v03
 # 另一个终端启动本地 H5，随后运行浏览器验收
 npm run preview:h5
 npm run check:h5
+npm run check:v03:h5
 ```
 
 API 测试在随机隔离的 PostgreSQL schema 内执行，完成后删除自身测试 schema；H5 测试创建独立浏览器账号并在结束时注销，不修改验收者账号。运行依赖为 `pg`，浏览器验收使用开发依赖 `playwright-core`。

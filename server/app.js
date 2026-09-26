@@ -1,5 +1,6 @@
 const { randomUUID, randomBytes, createHash } = require('node:crypto');
 const domain = require('../miniprogram/utils/domain');
+const { matchCase, sortMatches } = require('./matching');
 const { pool: defaultPool } = require('./db');
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -83,7 +84,8 @@ async function gift(db, userId, id) {
   if (!row) missing();
   return row;
 }
-const caseFields = 'id,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,helpful_count,created_at,updated_at';
+const caseFields = 'id,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,helpful_count,source_type,created_at,updated_at';
+const visibleCaseSources = (env) => env.NODE_ENV === 'production' ? ['user_generated', 'verified_seed'] : ['user_generated', 'verified_seed', 'internal_mock'];
 function reviewCase(value, recipientName) {
   const publicText = [value.gift_name, value.experience].join(' ').normalize('NFKC');
   const compact = publicText.replace(/[\s\p{P}\p{S}\p{Cf}]/gu, '').toLowerCase();
@@ -169,7 +171,12 @@ const eventRules = {
     value: (value) => ['全部', ...domain.RELATIONS, ...domain.AGE_BUCKETS, ...domain.OCCASIONS, ...domain.PRICE_RANGES, ...domain.WANTED_LEVELS].includes(value)
   },
   case_helpful: { count_bucket: (value) => ['1', '2-5', '6-20', '21+'].includes(value) },
-  case_unpublished: { had_helpful: (value) => typeof value === 'boolean' }
+  case_unpublished: { had_helpful: (value) => typeof value === 'boolean' },
+  gift_match_started: { relation_type: (v) => domain.RELATIONS.includes(v), age_range: (v) => !v || domain.AGE_BUCKETS.includes(v), occasion: (v) => domain.OCCASIONS.includes(v), price_range: (v) => domain.PRICE_RANGES.includes(v) },
+  gift_match_results: { result_count_bucket: (v) => ['0','1-5','6-20','21+'].includes(v) },
+  gift_idea_saved: { source_type: (v) => ['user_generated','verified_seed','internal_mock'].includes(v) },
+  saved_gift_converted: {},
+  saved_gift_removed: {}
 };
 function createApi(options = {}) {
   const pool = options.pool || defaultPool;
@@ -358,8 +365,8 @@ function createApi(options = {}) {
         } else if (method === 'GET' && route === '/v1/cases') {
           const { clauses, values, offset } = caseFilters(url.searchParams);
           const rows = (await pool.query(
-            `SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},c.owner_id=$${values.length + 1} AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$${values.length + 1}) AS helped FROM public_cases c WHERE c.status='published'${clauses.length ? ' AND ' + clauses.join(' AND ') : ''} ORDER BY c.created_at DESC,c.id DESC LIMIT 21 OFFSET $${values.length + 2}`,
-            [...values, userId, offset]
+            `SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},c.owner_id=$${values.length + 2} AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$${values.length + 2}) AS helped FROM public_cases c WHERE c.status='published' AND c.source_type=ANY($${values.length + 1}::text[])${clauses.length ? ' AND ' + clauses.join(' AND ') : ''} ORDER BY c.created_at DESC,c.id DESC LIMIT 21 OFFSET $${values.length + 3}`,
+            [...values, visibleCaseSources(env), userId, offset]
           )).rows;
           data = { items: rows.slice(0, 20), next_offset: rows.length > 20 ? offset + 20 : null };
         } else if (method === 'GET' && route === '/v1/me/cases') {
@@ -382,22 +389,23 @@ function createApi(options = {}) {
         } else if (/^\/v1\/cases\/[^/]+\/helpful$/.test(route) && method === 'POST') {
           const id = uuid(route.split('/')[3]);
           data = await transaction(pool, async (db) => {
-            const item = (await db.query("SELECT owner_id FROM public_cases WHERE id=$1 AND status='published' FOR UPDATE", [id])).rows[0];
+            const item = (await db.query("SELECT owner_id,source_type FROM public_cases WHERE id=$1 AND status='published' AND source_type=ANY($2::text[]) FOR UPDATE", [id,visibleCaseSources(env)])).rows[0];
             if (!item) missing();
             if (item.owner_id === userId) fail(400, 'OWN_CASE', '不能给自己的分享点有帮助');
             const inserted = await db.query('INSERT INTO case_helpful(case_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [id,userId]);
             if (inserted.rowCount) await db.query('UPDATE public_cases SET helpful_count=helpful_count+1 WHERE id=$1', [id]);
-            return { ...(await db.query('SELECT helpful_count FROM public_cases WHERE id=$1', [id])).rows[0], added: inserted.rowCount > 0 };
+            return { ...(await db.query('SELECT helpful_count,source_type FROM public_cases WHERE id=$1', [id])).rows[0], added: inserted.rowCount > 0 };
           });
-          if (data.added) emit('case_helpful', { count_bucket: data.helpful_count === 1 ? '1' : data.helpful_count <= 5 ? '2-5' : data.helpful_count <= 20 ? '6-20' : '21+' });
+          if (data.added && data.source_type !== 'internal_mock') emit('case_helpful', { count_bucket: data.helpful_count === 1 ? '1' : data.helpful_count <= 5 ? '2-5' : data.helpful_count <= 20 ? '6-20' : '21+' });
           delete data.added;
+          delete data.source_type;
         } else if (/^\/v1\/cases\/[^/]+$/.test(route)) {
           const id = uuid(route.split('/')[3]);
           if (method === 'GET') {
-            const row = (await pool.query(`SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},c.owner_id=$2 AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$2) AS helped FROM public_cases c WHERE c.id=$1 AND c.status='published'`, [id,userId])).rows[0];
+            const row = (await pool.query(`SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')},c.owner_id=$2 AS is_mine,EXISTS(SELECT 1 FROM case_helpful h WHERE h.case_id=c.id AND h.user_id=$2) AS helped FROM public_cases c WHERE c.id=$1 AND c.status='published' AND c.source_type=ANY($3::text[])`, [id,userId,visibleCaseSources(env)])).rows[0];
             if (!row) missing();
             data = row;
-            emit('case_opened', { is_mine: row.is_mine });
+            if (row.source_type !== 'internal_mock') emit('case_opened', { is_mine: row.is_mine });
           } else if (method === 'PATCH') {
             const value = validate(domain.validateCase, input);
             data = await transaction(pool, async (db) => {
@@ -460,6 +468,89 @@ function createApi(options = {}) {
             return recipient(db, userId, id);
           });
           emit('recipient_created', { relation_type: value.relation_type, has_tags: value.tags.length > 0 });
+        } else if (/^\/v1\/recipients\/[^/]+\/gift-matches$/.test(route) && method === 'GET') {
+          const person = await recipient(pool, userId, route.split('/')[3]);
+          const criteria = { occasion: url.searchParams.get('occasion'), price_range: url.searchParams.get('price_range') };
+          if (!domain.OCCASIONS.includes(criteria.occasion) || !domain.PRICE_RANGES.includes(criteria.price_range))
+            fail(400, 'VALIDATION_ERROR', '请选择场景和预算');
+          const limit = Number(url.searchParams.get('limit') || 20);
+          if (!Number.isInteger(limit) || limit < 1 || limit > 50) fail(400, 'VALIDATION_ERROR', '结果数量无效');
+          const rows = (await pool.query(
+            `SELECT ${caseFields.split(',').map((field) => 'c.' + field).join(',')} FROM public_cases c WHERE c.status='published' AND c.occasion=$1 AND c.source_type=ANY($2::text[])`,
+            [criteria.occasion, visibleCaseSources(env)]
+          )).rows;
+          const ranked = rows.map((item) => matchCase(person, criteria, item)).sort(sortMatches).slice(0, limit);
+          const ids = ranked.map((item) => item.case.id);
+          const saved = ids.length ? new Set((await pool.query("SELECT source_case_id FROM saved_gifts WHERE user_id=$1 AND recipient_id=$2 AND status='saved' AND source_case_id=ANY($3::uuid[])", [userId,person.id,ids])).rows.map((row) => row.source_case_id)) : new Set();
+          data = { recipient: { id: person.id, display_name: person.display_name, relation_type: person.relation_type, age_range: person.age_range }, criteria, items: ranked.map((item) => ({ ...item, saved: saved.has(item.case.id) })) };
+          emit('gift_match_started', { relation_type: person.relation_type, age_range: person.age_range, ...criteria });
+          const realCount = rows.filter((item) => item.source_type !== 'internal_mock').length;
+          emit('gift_match_results', { result_count_bucket: realCount === 0 ? '0' : realCount <= 5 ? '1-5' : realCount <= 20 ? '6-20' : '21+' });
+        } else if (/^\/v1\/recipients\/[^/]+\/saved-gifts$/.test(route) && method === 'GET') {
+          const person = await recipient(pool, userId, route.split('/')[3]);
+          data = (await pool.query(
+            `SELECT s.id,s.recipient_id,s.source_case_id,s.gift_name,s.source_snapshot,s.intended_occasion,s.intended_price_range,s.status,s.linked_gift_id,s.created_at,s.updated_at,
+              (c.status='published' AND c.source_type=ANY($3::text[])) AS source_available
+             FROM saved_gifts s LEFT JOIN public_cases c ON c.id=s.source_case_id
+             WHERE s.user_id=$1 AND s.recipient_id=$2 AND s.status='saved' AND ($4::boolean OR s.source_snapshot->>'source_type'<>'internal_mock') ORDER BY s.created_at DESC,s.id DESC`,
+            [userId,person.id,visibleCaseSources(env),env.NODE_ENV !== 'production']
+          )).rows.map((row) => ({ ...row, source_available: !!row.source_available }));
+        } else if (method === 'POST' && route === '/v1/saved-gifts') {
+          const recipientId = uuid(input.recipient_id), caseId = uuid(input.source_case_id);
+          if (!domain.OCCASIONS.includes(input.intended_occasion) || !domain.PRICE_RANGES.includes(input.intended_price_range))
+            fail(400, 'VALIDATION_ERROR', '请选择场景和预算');
+          data = await transaction(pool, async (db) => {
+            await recipient(db,userId,recipientId,true);
+            const source = (await db.query(`SELECT ${caseFields} FROM public_cases WHERE id=$1 AND status='published' AND source_type=ANY($2::text[])`, [caseId,visibleCaseSources(env)])).rows[0];
+            if (!source) missing();
+            const snapshot = { gift_name: source.gift_name, relation_type: source.relation_type, age_range: source.age_range,
+              occasion: source.occasion, price_range: source.price_range, reaction_level: source.reaction_level,
+              behavior_evidence: source.behavior_evidence, source_type: source.source_type };
+            const row = (await db.query(
+              `INSERT INTO saved_gifts(id,user_id,recipient_id,source_case_id,gift_name,source_snapshot,intended_occasion,intended_price_range,status)
+               VALUES($1,$2,$3,$4,$5,$6,$7,$8,'saved')
+               ON CONFLICT(user_id,recipient_id,source_case_id) WHERE status='saved' DO NOTHING
+               RETURNING id,recipient_id,source_case_id,gift_name,source_snapshot,intended_occasion,intended_price_range,status,linked_gift_id,created_at,updated_at`,
+              [randomUUID(),userId,recipientId,caseId,source.gift_name,snapshot,input.intended_occasion,input.intended_price_range]
+            )).rows[0];
+            return row || (await db.query("SELECT id,recipient_id,source_case_id,gift_name,source_snapshot,intended_occasion,intended_price_range,status,linked_gift_id,created_at,updated_at FROM saved_gifts WHERE user_id=$1 AND recipient_id=$2 AND source_case_id=$3 AND status='saved'", [userId,recipientId,caseId])).rows[0];
+          });
+          if (data.source_snapshot.source_type !== 'internal_mock') emit('gift_idea_saved', { source_type: data.source_snapshot.source_type });
+        } else if (/^\/v1\/saved-gifts\/[^/]+\/convert$/.test(route) && method === 'POST') {
+          const savedId = uuid(route.split('/')[3]);
+          uuid(input.request_id);
+          let created = false;
+          data = await transaction(pool, async (db) => {
+            const saved = (await db.query('SELECT * FROM saved_gifts WHERE id=$1 AND user_id=$2 FOR UPDATE', [savedId,userId])).rows[0];
+            if (!saved) missing();
+            if (env.NODE_ENV === 'production' && saved.source_snapshot.source_type === 'internal_mock') missing();
+            const value = validate(domain.validateGift, { ...input, recipient_id: saved.recipient_id });
+            const requestHash = hash(JSON.stringify({ saved_id: savedId, ...value }));
+            if (saved.status === 'gifted') {
+              const previous = (await db.query('SELECT * FROM gift_records WHERE id=$1 AND user_id=$2', [saved.linked_gift_id,userId])).rows[0];
+              if (previous?.request_id === input.request_id && previous.request_hash === requestHash && !previous.deleted_at) return publicRow(previous);
+              fail(409, 'ALREADY_GIFTED', '这份想送已经记为已送');
+            }
+            if (saved.status !== 'saved') missing();
+            await recipient(db,userId,saved.recipient_id,true);
+            const id = randomUUID();
+            const inserted = await db.query(
+              `INSERT INTO gift_records(id,user_id,recipient_id,request_id,request_hash,gift_name,reaction_level,gifted_at,occasion,price_fen,note)
+               VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(user_id,request_id) DO NOTHING`,
+              [id,userId,saved.recipient_id,input.request_id,requestHash,value.gift_name,value.reaction_level,value.gifted_at,value.occasion,value.price_fen,value.note]
+            );
+            if (!inserted.rowCount) fail(409, 'IDEMPOTENCY_CONFLICT', '这次保存的内容已变化，请重新保存');
+            await db.query("UPDATE saved_gifts SET status='gifted',linked_gift_id=$1,updated_at=now() WHERE id=$2", [id,savedId]);
+            created = true;
+            return publicRow((await db.query('SELECT * FROM gift_records WHERE id=$1', [id])).rows[0]);
+          });
+          if (created && (await pool.query('SELECT source_snapshot->>\'source_type\' AS source_type FROM saved_gifts WHERE id=$1', [savedId])).rows[0]?.source_type !== 'internal_mock') emit('saved_gift_converted');
+        } else if (/^\/v1\/saved-gifts\/[^/]+$/.test(route) && method === 'DELETE') {
+          const id = uuid(route.split('/')[3]);
+          const row = (await pool.query("UPDATE saved_gifts SET status='removed',updated_at=now() WHERE id=$1 AND user_id=$2 AND status='saved' AND ($3::boolean OR source_snapshot->>'source_type'<>'internal_mock') RETURNING id,source_snapshot", [id,userId,env.NODE_ENV !== 'production'])).rows[0];
+          if (!row) missing();
+          data = null;
+          if (row.source_snapshot.source_type !== 'internal_mock') emit('saved_gift_removed');
         } else if (/^\/v1\/recipients\/[^/]+\/gifts$/.test(route) && method === 'GET') {
           const id = route.split('/')[3];
           await recipient(pool, userId, id);

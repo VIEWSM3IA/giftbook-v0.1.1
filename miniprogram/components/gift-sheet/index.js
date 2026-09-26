@@ -4,24 +4,24 @@ const domain = require('../../utils/domain');
 Component({
   data: {
     visible: false, full: false, expanded: false, busy: false, error: '',
-    editId: '', recipientId: '', recipientName: '', statusTop: 0,
+    editId: '', savedId: '', recipientId: '', recipientName: '', statusTop: 0,
     form: { gift_name: '', reaction_level: null, gifted_at: domain.today(), occasion: '', note: '' },
     price: '', today: domain.today(), reactions: domain.REACTIONS,
     occasions: ['不记录', ...domain.OCCASIONS]
   },
   methods: {
-    open({ recipientId, recipientName, gift }) {
+    open({ recipientId, recipientName, gift, saved }) {
       if (!recipientId) return;
       this.requestId = store.requestId();
       this.setData({
-        visible: true, full: !!gift, expanded: !!gift, busy: false, error: '',
-        editId: gift?.id || '', recipientId, recipientName,
+        visible: true, full: !!gift || !!saved, expanded: !!gift || !!saved, busy: false, error: '',
+        editId: gift?.id || '', savedId: saved?.id || '', recipientId, recipientName,
         statusTop: wx.getSystemInfoSync ? wx.getSystemInfoSync().statusBarHeight : 0,
         today: domain.today(),
         form: gift ? {
           gift_name: gift.gift_name, reaction_level: gift.reaction_level,
           gifted_at: gift.gifted_at, occasion: gift.occasion || '', note: gift.note || ''
-        } : { gift_name: '', reaction_level: null, gifted_at: domain.today(), occasion: '', note: '' },
+        } : { gift_name: saved?.gift_name || '', reaction_level: null, gifted_at: domain.today(), occasion: saved?.intended_occasion || '', note: '' },
         price: gift ? domain.formatPrice(gift.price_fen) : ''
       });
     },
@@ -44,11 +44,12 @@ Component({
           price_fen: domain.parsePrice(this.data.price)
         });
         const id = this.data.editId;
-        const gift = await store.request('/v1/gifts' + (id ? '/' + id : ''), id ? 'PATCH' : 'POST',
-          id ? payload : { ...payload, request_id: this.requestId });
+        const gift = this.data.savedId
+          ? await store.request('/v1/saved-gifts/' + this.data.savedId + '/convert', 'POST', { ...payload, request_id: this.requestId })
+          : await store.request('/v1/gifts' + (id ? '/' + id : ''), id ? 'PATCH' : 'POST', id ? payload : { ...payload, request_id: this.requestId });
         this.setData({ visible: false });
         if (wx.vibrateShort) wx.vibrateShort({ type: 'light' });
-        this.triggerEvent('saved', { gift, editId: id });
+        this.triggerEvent('saved', { gift, editId: id, savedId: this.data.savedId });
       } catch (error) {
         this.setData({ error: error.message });
       } finally {

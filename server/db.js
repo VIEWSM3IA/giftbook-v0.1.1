@@ -17,6 +17,7 @@ async function migrate(db = pool) {
     await client.query(await fs.readFile(path.join(__dirname, '../migrations/002_v011.sql'), 'utf8'));
     await client.query(await fs.readFile(path.join(__dirname, '../migrations/003_v02.sql'), 'utf8'));
     await client.query(await fs.readFile(path.join(__dirname, '../migrations/004_v02_frozen.sql'), 'utf8'));
+    await client.query(await fs.readFile(path.join(__dirname, '../migrations/005_v03_find_for_ta.sql'), 'utf8'));
     for (const [index, name] of require('../miniprogram/utils/domain').TAGS.entries()) {
       await client.query(
         'INSERT INTO tags(id,code,name,sort_order) VALUES($1,$2,$3,$4) ON CONFLICT(name) DO NOTHING',

@@ -36,6 +36,7 @@ jobs:
       - run: npx playwright-core install --with-deps chromium
       - run: npm run check
       - run: npm test
+      - run: npm run seed:v03
       - name: Start H5 preview
         run: |
           node scripts/serve-h5.js > /tmp/giftbook-h5.log 2>&1 &
@@ -46,6 +47,7 @@ jobs:
           cat /tmp/giftbook-h5.log
           exit 1
       - run: npm run check:h5
+      - run: H5_SCREENSHOT_DIR=/tmp/giftbook-h5-evidence/v03 npm run check:v03:h5
       - uses: actions/upload-artifact@v4
         if: always()
         with:
