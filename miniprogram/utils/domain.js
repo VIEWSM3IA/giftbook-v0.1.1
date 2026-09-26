@@ -17,7 +17,10 @@ const BEHAVIOR_EVIDENCE = [
   { code: 'used_immediately', label: '马上用了' },
   { code: 'used_repeatedly', label: '后来经常用' },
   { code: 'mentioned_later', label: '后来主动提起过' },
-  { code: 'shared_with_others', label: '分享给别人' }
+  { code: 'shared_with_others', label: '分享给别人' },
+  { code: 'polite_thanks_only', label: '礼貌感谢' },
+  { code: 'rarely_used', label: '后来很少用' },
+  { code: 'returned_or_exchanged', label: '后来换掉或退掉' }
 ];
 const TAGS = [
   '阅读',

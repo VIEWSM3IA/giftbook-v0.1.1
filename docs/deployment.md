@@ -14,6 +14,8 @@
 
 2026-09-25 已更新至 V0.2 匿名案例预览。新增 `public_cases` 与 `case_helpful` 表；迁移前备份为 `/tmp/giftbook-v02-predeploy-20260925.dump`，仅部署用户可读。回退旧版代码时保留新增表，旧版可继续读取私有数据；恢复 V0.2 代码并重启服务即可再次读取公开案例。若需要恢复迁移前数据库，必须先停止服务并另存当前数据库，再使用该备份恢复；这会丢失备份之后的全部写入。
 
+2026-09-26：V0.3 已在 `feat/v03-find-for-ta` 分支开发，但固定公网入口仍为 V0.2。服务通过用户级 systemd 覆盖文件 `~/.config/systemd/user/giftbook-preview.service.d/v02-code.conf` 固定使用 `/home/aj/VC/giftbook-v02-preview`（提交 `60fffdf`）的源码，避免公网读取 V0.3 静态文件却运行 V0.2 API。当前共用数据库已应用兼容的 005 迁移，但本轮临时导入的 120 条 `internal_mock` 已在确认无想送引用后清理；公网 V0.2 浏览器回归通过。正式切换 V0.3 时须先备份数据库、切换服务源码并重启，再导入模拟案例用于 H5 验收；不要先导入案例后继续运行 V0.2 服务。
+
 子域名 DNS、Tunnel 路由和 HTTPS 已配置。Cloudflare Tunnel 已连接到源站；公网匿名请求只会看到口令页，未登录的 API 和静态资源被拦截，成功登录后 H5 与 API 可用。HTTP 请求会跳转到 HTTPS，HTTPS 响应附带 HSTS。入口由 Cloudflare Tunnel 转发，Node 和 PostgreSQL 均只监听本机回环地址，没有向公网开放服务端口。
 
 `giftbook-db`、`giftbook-preview`、`giftbook-tunnel` 是已启用的用户级 systemd 服务。PostgreSQL 使用 `~/.local/share/giftbook-v01-postgres`，与机器上的其他数据库实例隔离。用户服务通过 systemd linger 在用户退出后继续运行。

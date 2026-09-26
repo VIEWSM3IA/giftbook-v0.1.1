@@ -36,7 +36,7 @@
   }
   function nav(to) {
     if (current?.type === 'home' && !to.startsWith('home')) homeScroll = scrollY;
-    if (to === 'person-new' || to.startsWith('record/') || to.startsWith('person-edit/') || to.startsWith('gift-edit/') || to.startsWith('case-new/') || to.startsWith('case-edit/'))
+    if (to === 'person-new' || to.startsWith('record/') || to.startsWith('convert/') || to.startsWith('find/') || to.startsWith('person-edit/') || to.startsWith('gift-edit/') || to.startsWith('case-new/') || to.startsWith('case-edit/'))
       sheetBackground = app.innerHTML;
     else if (!to.startsWith('gift/')) sheetBackground = '';
     if (location.hash.slice(1) === to) render();
@@ -144,7 +144,7 @@
     if (!gifts.length) return `<div class="log-empty"><h3>还没有礼物记录</h3><button data-action="add-gift">记第一份</button></div>`;
     return D.giftLog(gifts).map((g) => `<div class="log-shell" id="gift-${e(g.id)}"><div class="swipe-actions"><button data-go="gift-edit/${e(g.id)}">编辑</button><button data-action="delete-inline" data-id="${e(g.id)}">删除</button></div><article class="log-entry" data-gift-id="${e(g.id)}" tabindex="0" role="button" aria-label="查看${e(g.gift_name)}"><time class="log-date" datetime="${e(g.gifted_at)}"><strong>${e(g.log_date)}</strong>${g.log_year ? `<span>${e(g.log_year)}</span>` : ''}</time><div class="log-title-row"><h3>${e(g.gift_name)}</h3><button class="log-more" data-action="gift-menu" data-id="${e(g.id)}" aria-label="${e(g.gift_name)}更多操作">•••</button></div>${g.log_meta ? `<p class="log-meta">${e(g.log_meta)}</p>` : ''}<p class="log-reaction">${e(g.log_reaction)}</p>${g.note ? `<p class="log-note">${e(g.note)}</p>` : ''}</article></div>`).join('');
   }
-  async function selectRecipient(id, remember = true) {
+  async function selectRecipient(id, remember = true, view = 'records') {
     if (current?.type !== 'home') return;
     const person = current.people.find((p) => p.id === id);
     if (!person) return;
@@ -152,7 +152,8 @@
     current.person = person;
     current.gifts = [];
     current.cursor = null;
-    history.replaceState(null, '', '#home?recipient=' + encodeURIComponent(id));
+    current.viewMode = view;
+    history.replaceState(null, '', '#home?recipient=' + encodeURIComponent(id) + (view === 'saved' ? '&view=saved' : ''));
     const scroll = app.querySelector('.recipient-scroll');
     const left = scroll?.scrollLeft || 0;
     app.querySelector('#book-tabs').innerHTML = recipientTabs(current.people, id);
@@ -162,7 +163,7 @@
     const scrollRect = nextScroll.getBoundingClientRect();
     if (tabRect.left < scrollRect.left) nextScroll.scrollLeft -= scrollRect.left - tabRect.left;
     if (tabRect.right > scrollRect.right) nextScroll.scrollLeft += tabRect.right - scrollRect.right;
-    app.querySelector('#book-content').innerHTML = `<section class="recipient-summary"><div><h2>${e(person.display_name)}</h2><p>${[person.relation_type, person.age_range ? person.age_range + ' 岁' : ''].filter(Boolean).map(e).join(' · ')}</p></div><button class="summary-edit" data-action="person-menu" aria-label="管理这位 TA">•••</button></section>${person.tags?.length ? `<div class="book-tags">${person.tags.map((tag) => `<span>${e(tag)}</span>`).join('')}</div>` : ''}<section class="gift-log" id="book-log"><p class="log-loading">正在读取记录…</p></section><button class="gift-fab" data-go="record/${e(id)}" aria-label="记一份礼物">＋</button>`;
+    app.querySelector('#book-content').innerHTML = `<section class="recipient-summary"><div><h2>${e(person.display_name)}</h2><p>${[person.relation_type, person.age_range ? person.age_range + ' 岁' : ''].filter(Boolean).map(e).join(' · ')}</p></div><button class="summary-edit" data-action="person-menu" aria-label="管理这位 TA">•••</button></section><div class="ta-actions"><div class="ta-switch"><button data-action="show-records" class="${view === 'records' ? 'selected' : ''}">记录</button><button data-action="show-saved" class="${view === 'saved' ? 'selected' : ''}">想送</button></div><button class="find-link" data-go="find/${e(id)}">找礼物 ›</button></div>${person.tags?.length ? `<div class="book-tags">${person.tags.map((tag) => `<span>${e(tag)}</span>`).join('')}</div>` : ''}<section class="gift-log" id="book-log"><p class="log-loading">正在读取记录…</p></section><button class="gift-fab ${view === 'saved' ? 'hidden' : ''}" data-go="record/${e(id)}" aria-label="记一份礼物">＋</button>`;
     if (remember) {
       activeWrite = activeWrite.catch(() => {}).then(() => api('/me/active-recipient', 'PATCH', { recipient_id: id }));
       activeWrite.catch((error) => toast(error.message));
@@ -173,10 +174,40 @@
       current.gifts = result.items;
       current.cursor = result.next_cursor;
       app.querySelector('#book-log').innerHTML = logHTML(result.items) + (result.next_cursor ? '<button class="load-more" data-action="load-more-home">更早的记录</button>' : '');
+      if (view === 'saved') await showSaved();
     } catch (error) {
       if (current?.type === 'home' && current.sequence === sequence)
         app.querySelector('#book-log').innerHTML = `<div class="book-error">${e(error.message)}<button data-action="retry-person">重试</button></div>`;
     }
+  }
+  async function showSaved() {
+    if (current?.type !== 'home' || !current.person) return;
+    const personId = current.person.id;
+    current.viewMode = 'saved';
+    history.replaceState(null, '', '#home?recipient=' + encodeURIComponent(personId) + '&view=saved');
+    app.querySelector('[data-action="show-records"]').classList.remove('selected');
+    app.querySelector('[data-action="show-saved"]').classList.add('selected');
+    app.querySelector('.gift-fab').classList.add('hidden');
+    app.querySelector('#book-log').innerHTML = '<p class="log-loading">正在读取想送…</p>';
+    try {
+      const items = await api('/recipients/' + personId + '/saved-gifts');
+      if (current?.type !== 'home' || current.person.id !== personId || current.viewMode !== 'saved') return;
+      current.savedGifts = items;
+      app.querySelector('#book-log').innerHTML = items.length ? items.map((item) =>
+        `<article class="saved-card"><div class="saved-row"><h3>${e(item.gift_name)}</h3><button data-action="saved-menu" data-id="${e(item.id)}" aria-label="${e(item.gift_name)}更多操作">•••</button></div><p class="saved-meta">${item.source_snapshot.source_type === 'internal_mock' ? '演示案例' : '来自真实案例'} · ${e(item.intended_occasion)} · ${e(item.intended_price_range)} 元</p><p class="saved-result">${e(D.reaction(item.source_snapshot.reaction_level).label)} · ${e(D.evidenceLabels(item.source_snapshot.behavior_evidence))}</p><button class="saved-convert" data-go="convert/${e(item.id)}?recipient=${e(personId)}">已经送了</button></article>`).join('') : '<div class="log-empty"><h3>还没有想送的礼物</h3><button data-go="find/' + e(personId) + '">找一些礼物</button></div>';
+    } catch (error) {
+      if (current?.type === 'home' && current.person.id === personId)
+        app.querySelector('#book-log').innerHTML = `<div class="book-error">${e(error.message)}<button data-action="show-saved">重试</button></div>`;
+    }
+  }
+  function showRecords() {
+    if (current?.type !== 'home') return;
+    current.viewMode = 'records';
+    history.replaceState(null, '', '#home?recipient=' + encodeURIComponent(current.person.id));
+    app.querySelector('[data-action="show-records"]').classList.add('selected');
+    app.querySelector('[data-action="show-saved"]').classList.remove('selected');
+    app.querySelector('.gift-fab').classList.remove('hidden');
+    app.querySelector('#book-log').innerHTML = logHTML(current.gifts) + (current.cursor ? '<button class="load-more" data-action="load-more-home">更早的记录</button>' : '');
   }
   async function home(version, query) {
     const [people, meData] = await Promise.all([api('/recipients'), api('/me')]);
@@ -189,7 +220,7 @@
     app.innerHTML = bookHeader() + (people.length
       ? `<div id="book-tabs">${recipientTabs(people, id)}</div><div id="book-content"></div>`
       : '<section class="book-first"><h2>还没有人</h2><button data-go="person-new">添加第一个人</button></section>');
-    if (id) await selectRecipient(id, true);
+    if (id) await selectRecipient(id, true, query.get('view') === 'saved' ? 'saved' : 'records');
     if (version === routeVersion && homeScroll) requestAnimationFrame(() => window.scrollTo(0, homeScroll));
   }
   function optionList(options, value, placeholder = '请选择') {
@@ -243,10 +274,15 @@
     const draft = getDraft(key);
     const g = { ...original, ...draft };
     const price = draft.price !== undefined ? draft.price : D.formatPrice(original.price_fen);
-    return `<header class="form-heading"><h1>${editId ? '编辑礼物' : '记一份礼物'}</h1></header><div class="recipient-chip"><div><span class="for-label">送给</span><strong> ${e(person.display_name)}</strong><small>${e(person.relation_type)}</small></div></div><form data-form="gift" data-id="${e(editId || '')}" data-recipient="${e(person.id)}" data-draft="${key}" data-request-id="${e(draft.request_id || uuid())}" ${detail ? 'data-return="detail"' : ''} novalidate><div class="form-group">${inputField('礼物', 'gift_name', g.gift_name, '送了什么礼物？', 60)}</div><fieldset class="reaction-section"><legend>TA 的反应</legend><div class="reactions">${D.REACTIONS.map((r) => `<label class="reaction-choice"><input type="radio" name="reaction_level" value="${r.value}" ${Number(g.reaction_level) === r.value ? 'checked' : ''}><span>${r.label}</span></label>`).join('')}</div></fieldset><div class="form-group"><label class="field row-field"><span class="field-label">送礼日期</span><input aria-label="送礼日期" type="date" name="gifted_at" max="${D.today()}" value="${e(g.gifted_at || D.today())}"></label></div><details class="optional" ${editId || g._expanded ? 'open' : ''}><summary>再记一点细节${icon('chevron')}</summary><div class="form-group">${selectField('场景', 'occasion', D.OCCASIONS, g.occasion)}<label class="field row-field"><span class="field-label">价格 · 元</span><input name="price" inputmode="decimal" placeholder="选填" value="${e(price)}" maxlength="12"></label>${noteField('note', g.note, 300, '一句话备注', '比如，TA 收到时说了什么')}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button class="primary" type="submit">${editId ? '保存修改' : '记下来'}</button></div></form>`;
+    return `<header class="form-heading"><h1>${editId ? '编辑礼物' : '记一份礼物'}</h1></header><div class="recipient-chip"><div><span class="for-label">送给</span><strong> ${e(person.display_name)}</strong><small>${e(person.relation_type)}</small></div></div><form data-form="gift" data-id="${e(editId || '')}" data-saved-id="${e(g.saved_id || '')}" data-recipient="${e(person.id)}" data-draft="${key}" data-request-id="${e(draft.request_id || uuid())}" ${detail ? 'data-return="detail"' : ''} novalidate><div class="form-group">${inputField('礼物', 'gift_name', g.gift_name, '送了什么礼物？', 60)}</div><fieldset class="reaction-section"><legend>TA 的反应</legend><div class="reactions">${D.REACTIONS.map((r) => `<label class="reaction-choice"><input type="radio" name="reaction_level" value="${r.value}" ${Number(g.reaction_level) === r.value ? 'checked' : ''}><span>${r.label}</span></label>`).join('')}</div></fieldset><div class="form-group"><label class="field row-field"><span class="field-label">送礼日期</span><input aria-label="送礼日期" type="date" name="gifted_at" max="${D.today()}" value="${e(g.gifted_at || D.today())}"></label></div><details class="optional" ${editId || g.saved_id || g._expanded ? 'open' : ''}><summary>再记一点细节${icon('chevron')}</summary><div class="form-group">${selectField('场景', 'occasion', D.OCCASIONS, g.occasion)}<label class="field row-field"><span class="field-label">价格 · 元</span><input name="price" inputmode="decimal" placeholder="选填" value="${e(price)}" maxlength="12"></label>${noteField('note', g.note, 300, '一句话备注', '比如，TA 收到时说了什么')}</div></details><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button class="primary" type="submit">${editId ? '保存修改' : '记下来'}</button></div></form>`;
   }
-  async function recordForm(recipientId, editId, version) {
+  async function recordForm(recipientId, editId, version, savedId = '') {
     let original = {};
+    if (savedId) {
+      const saved = (await api('/recipients/' + recipientId + '/saved-gifts')).find((item) => item.id === savedId);
+      if (!saved) throw new Error('这份想送已不存在');
+      original = { saved_id: saved.id, gift_name: saved.gift_name, occasion: saved.intended_occasion };
+    }
     if (editId) {
       original = await api('/gifts/' + editId);
       recipientId = original.recipient_id;
@@ -260,10 +296,10 @@
     }
     const p = await api('/recipients/' + recipientId);
     if (version !== routeVersion) return;
-    const key = editId ? 'gift-' + editId : 'record-' + recipientId;
+    const key = savedId ? 'convert-' + savedId : editId ? 'gift-' + editId : 'record-' + recipientId;
     current = { type: 'record-form', person: p, original };
     hideTabs();
-    app.innerHTML = sheetFrame(editId ? 'gift/' + editId : 'home?recipient=' + recipientId,
+    app.innerHTML = sheetFrame(editId ? 'gift/' + editId : 'home?recipient=' + recipientId + (savedId ? '&view=saved' : ''),
       giftFormHTML(p, original, editId, key));
   }
   async function giftDetail(id, version) {
@@ -282,7 +318,7 @@
     ['wanted_level', '想要程度', D.WANTED_LEVELS]
   ];
   function caseCard(item, mine = false) {
-    const content = `<h3>${e(item.gift_name)}</h3><p>${e(item.relation_type)} · ${e(item.age_range)} 岁 · ${e(item.occasion)}</p><p>${e(item.price_range)} 元 · ${e(item.wanted_level)}</p><p class="case-result">${e(D.reaction(item.reaction_level).label)} · ${e(D.evidenceLabels(item.behavior_evidence))}</p>${item.experience ? `<p class="case-experience">“${e(item.experience)}”</p>` : ''}`;
+    const content = `<h3>${e(item.gift_name)}</h3><p>${item.source_type === 'internal_mock' ? '演示案例 · ' : ''}${e(item.relation_type)} · ${e(item.age_range)} 岁 · ${e(item.occasion)}</p><p>${e(item.price_range)} 元 · ${e(item.wanted_level)}</p><p class="case-result">${e(D.reaction(item.reaction_level).label)} · ${e(D.evidenceLabels(item.behavior_evidence))}</p>${item.experience ? `<p class="case-experience">“${e(item.experience)}”</p>` : ''}`;
     const visible = item.status !== 'removed';
     return `<article class="case-card">${visible ? `<button class="case-open" data-go="case/${e(item.id)}">${content}</button>` : `<div class="case-open">${content}</div>`}${mine ? `<p class="case-status">${visible ? '公开中' : '已下架'} · 有帮助 ${item.helpful_count}</p>${visible ? `<div class="case-actions"><button data-go="case-edit/${e(item.id)}">编辑</button><button data-action="unpublish-case" data-id="${e(item.id)}">下架</button></div>` : ''}` : `<div class="case-actions"><button data-action="helpful-case" data-id="${e(item.id)}" ${item.helped || item.is_mine ? 'disabled' : ''}>${item.is_mine ? '我的分享' : item.helped ? '已觉得有帮助' : '有帮助'} · ${item.helpful_count}</button></div>`}</article>`;
   }
@@ -292,7 +328,7 @@
     if (version !== routeVersion) return;
     current = { type: 'cases', params, items: result.items, nextOffset: result.next_offset };
     showTabs('cases');
-    app.innerHTML = `<header class="explore-header"><h1>看看</h1><button data-go="my-cases">我的分享 ›</button></header><p class="case-intro">来自真实礼物记录的匿名分享</p><div class="case-filters">${caseFilters.map(([field, label, options]) => `<label><span>${label}</span><select data-filter="${field}" aria-label="${label}">${optionList(options, params.get(field) || '', '全部')}</select></label>`).join('')}</div><div id="case-list">${result.items.length ? result.items.map((item) => caseCard(item)).join('') : '<p class="case-empty">还没有符合条件的案例。可以换个条件看看。</p>'}</div>${result.next_offset !== null ? '<button class="load-more" data-action="load-more-cases">加载更多</button>' : ''}`;
+    app.innerHTML = `<header class="explore-header"><h1>看看</h1><button data-go="my-cases">我的分享 ›</button></header><p class="case-intro">匿名礼物案例，演示数据会标明</p><div class="case-filters">${caseFilters.map(([field, label, options]) => `<label><span>${label}</span><select data-filter="${field}" aria-label="${label}">${optionList(options, params.get(field) || '', '全部')}</select></label>`).join('')}</div><div id="case-list">${result.items.length ? result.items.map((item) => caseCard(item)).join('') : '<p class="case-empty">还没有符合条件的案例。可以换个条件看看。</p>'}</div>${result.next_offset !== null ? '<button class="load-more" data-action="load-more-cases">加载更多</button>' : ''}`;
   }
   async function myCases(version) {
     const items = await api('/me/cases');
@@ -301,13 +337,34 @@
     hideTabs();
     app.innerHTML = top('cases') + `<h1 class="settings-title">我的分享</h1><p class="case-intro">下架不会删除你的礼物记录。</p>${items.length ? items.map((item) => caseCard(item, true)).join('') : '<p class="case-empty">还没有分享。打开礼物记录就能匿名分享。</p>'}`;
   }
-  async function caseDetail(id, version) {
+  async function caseDetail(id, version, returnPath = 'cases') {
     const item = await api('/cases/' + id);
     if (version !== routeVersion) return;
     current = { type: 'case', item };
     hideTabs();
     const rows = [['关系', item.relation_type], ['年龄段', item.age_range + ' 岁'], ['场景', item.occasion], ['价格区间', item.price_range + ' 元'], ['对方之前想要吗', item.wanted_level], ['TA 的反应', D.reaction(item.reaction_level).label], ['行为证据', D.evidenceLabels(item.behavior_evidence)], ...(item.experience ? [['一句经验', item.experience]] : [])];
-    app.innerHTML = top('cases') + `<section class="record-hero"><h1>${e(item.gift_name)}</h1><p class="case-intro">匿名真实送礼案例</p></section><dl class="detail-list">${rows.map(([label, value]) => `<div class="detail-line"><dt>${e(label)}</dt><dd>${e(value)}</dd></div>`).join('')}</dl><button class="primary case-share" data-action="helpful-case" data-id="${e(id)}" ${item.helped || item.is_mine ? 'disabled' : ''}>${item.is_mine ? '我的分享' : item.helped ? '已觉得有帮助' : '有帮助'} · ${item.helpful_count}</button>`;
+    app.innerHTML = top(returnPath) + `<section class="record-hero"><h1>${e(item.gift_name)}</h1><p class="case-intro">${item.source_type === 'internal_mock' ? '演示案例 · 仅供开发验收' : '匿名真实送礼案例'}</p></section><dl class="detail-list">${rows.map(([label, value]) => `<div class="detail-line"><dt>${e(label)}</dt><dd>${e(value)}</dd></div>`).join('')}</dl><button class="primary case-share" data-action="helpful-case" data-id="${e(id)}" ${item.helped || item.is_mine ? 'disabled' : ''}>${item.is_mine ? '我的分享' : item.helped ? '已觉得有帮助' : '有帮助'} · ${item.helpful_count}</button>`;
+  }
+  async function findForm(id, version) {
+    const person = await api('/recipients/' + id);
+    if (version !== routeVersion) return;
+    current = { type: 'find', person };
+    hideTabs();
+    app.innerHTML = sheetFrame('home?recipient=' + id,
+      `<header class="form-heading"><h1>给 ${e(person.display_name)} 找礼物</h1></header><form data-form="find" data-recipient="${e(id)}" novalidate><div class="form-group">${selectField('场景 *', 'occasion', D.OCCASIONS, '', '请选择')}${selectField('预算 *', 'price_range', D.PRICE_RANGES, '', '请选择')}</div><p class="find-context">自动使用：${e(person.relation_type)}${person.age_range ? ' · ' + e(person.age_range) + ' 岁' : ''}</p><div id="form-error" class="error" role="alert"></div><div class="form-footer"><button class="primary" type="submit">看看案例</button></div></form>`);
+  }
+  async function matchResults(id, query, version) {
+    const occasion = query.get('occasion'), price = query.get('price_range');
+    const result = await api('/recipients/' + id + '/gift-matches?occasion=' + encodeURIComponent(occasion || '') + '&price_range=' + encodeURIComponent(price || ''));
+    if (version !== routeVersion) return;
+    const returnPath = 'matches/' + id + '?occasion=' + encodeURIComponent(occasion) + '&price_range=' + encodeURIComponent(price);
+    current = { type: 'matches', result, returnPath, recipientId: id };
+    hideTabs();
+    app.innerHTML = top('find/' + id) + `<header class="match-heading"><h1>给 ${e(result.recipient.display_name)} 找礼物</h1><p>${e(occasion)} · ${e(price)} 元</p></header><div id="match-list">${result.items.length ? result.items.map((entry) => matchCard(entry, returnPath)).join('') : '<p class="case-empty">暂时没有符合场景的案例，试试其他场景。</p>'}</div><button class="secondary match-saved-link" data-go="home?recipient=${e(id)}&view=saved">查看想送</button>`;
+  }
+  function matchCard(entry, returnPath) {
+    const item = entry.case;
+    return `<article class="match-card"><button class="case-open" data-go="case/${e(item.id)}?return=${encodeURIComponent(returnPath)}"><h3>${e(item.gift_name)}</h3><p>${item.source_type === 'internal_mock' ? '演示案例 · ' : ''}${e(item.relation_type)} · ${e(item.age_range)} 岁 · ${e(item.occasion)}</p><p>${e(item.price_range)} 元 · ${e(item.wanted_level)}</p><p class="saved-result">${e(D.reaction(item.reaction_level).label)} · ${e(D.evidenceLabels(item.behavior_evidence))}</p><p class="match-reasons">为什么匹配：${e(entry.match_reasons.join(' · '))}</p></button><button class="saved-convert" data-action="save-match" data-id="${e(item.id)}" ${entry.saved ? 'disabled' : ''}>${entry.saved ? '已收藏' : '收藏给 ' + e(current?.result?.recipient?.display_name || 'TA')}</button></article>`;
   }
   async function caseForm(sourceId, edit, version) {
     let item, giftName;
@@ -357,7 +414,7 @@
     const [path, queryString] = raw.split('?');
     const [view, id] = path.split('/');
     const query = new URLSearchParams(queryString || '');
-    document.body.classList.toggle('sheet-open', ['person-new', 'person-edit', 'record', 'gift-edit', 'case-new', 'case-edit'].includes(view));
+    document.body.classList.toggle('sheet-open', ['person-new', 'person-edit', 'record', 'convert', 'find', 'gift-edit', 'case-new', 'case-edit'].includes(view));
     if (dialog.open) dialog.close();
     window.scrollTo(0, 0);
     if (!token || view === 'welcome') {
@@ -378,11 +435,14 @@
       else if (view === 'person-edit' && id) await personForm(id, version);
       else if (view === 'person' && id) nav('home?recipient=' + id);
       else if (view === 'record') await recordForm(id, '', version);
+      else if (view === 'convert' && id) await recordForm(query.get('recipient'), '', version, id);
+      else if (view === 'find' && id) await findForm(id, version);
+      else if (view === 'matches' && id) await matchResults(id, query, version);
       else if (view === 'gift-edit' && id) await recordForm('', id, version);
       else if (view === 'gift' && id) await giftDetail(id, version);
       else if (view === 'cases') await cases(version, query);
       else if (view === 'my-cases') await myCases(version);
-      else if (view === 'case' && id) await caseDetail(id, version);
+      else if (view === 'case' && id) await caseDetail(id, version, query.get('return') || 'cases');
       else if (view === 'case-new' && id) await caseForm(id, false, version);
       else if (view === 'case-edit' && id) await caseForm(id, true, version);
       else if (view === 'me') await me(version);
@@ -421,6 +481,36 @@
     if (token) api('/events', 'POST', { event, properties }).catch(() => {});
   }
   async function action(name, button) {
+    if (name === 'show-saved') { await showSaved(); return; }
+    if (name === 'show-records') { showRecords(); return; }
+    if (name === 'save-match' && current?.type === 'matches') {
+      button.disabled = true;
+      try {
+        await api('/saved-gifts', 'POST', { recipient_id: current.recipientId, source_case_id: button.dataset.id,
+          intended_occasion: current.result.criteria.occasion, intended_price_range: current.result.criteria.price_range });
+        button.textContent = '已收藏';
+        const entry = current.result.items.find((item) => item.case.id === button.dataset.id);
+        if (entry) entry.saved = true;
+        toast('已收藏给 TA');
+      } catch (error) { button.disabled = false; throw error; }
+      return;
+    }
+    if (name === 'saved-menu' && current?.type === 'home') {
+      const item = current.savedGifts?.find((entry) => entry.id === button.dataset.id);
+      if (!item) return;
+      openDialog(`<h2>${e(item.gift_name)}</h2><div class="gift-menu"><button ${item.source_available ? `data-go="case/${e(item.source_case_id)}?return=${encodeURIComponent('home?recipient=' + current.person.id + '&view=saved')}"` : 'disabled'}>${item.source_available ? '查看来源案例' : '来源案例已下架'}</button><button data-action="remove-saved" data-id="${e(item.id)}">移除想送</button></div>`);
+      return;
+    }
+    if (name === 'remove-saved' && current?.type === 'home') {
+      const item = current.savedGifts?.find((entry) => entry.id === button.dataset.id);
+      if (!item) return;
+      dialog.close();
+      confirmAction('移除想送？', `“${item.gift_name}”将不再显示。`, '移除', async () => {
+        await api('/saved-gifts/' + item.id, 'DELETE');
+        await showSaved();
+      });
+      return;
+    }
     if (name === 'sheet-expand') { button.closest('.form-sheet')?.classList.toggle('full'); return; }
     if (name === 'edit-detail-gift' && current?.type === 'gift') {
       const { gift, person } = current;
@@ -845,6 +935,11 @@
         });
       else if (form.dataset.form === 'case')
         payload = D.validateCase({ ...data, reaction_level: Number(data.reaction_level), behavior_evidence: new FormData(form).getAll('behavior_evidence') });
+      else if (form.dataset.form === 'find') {
+        if (!D.OCCASIONS.includes(data.occasion) || !D.PRICE_RANGES.includes(data.price_range)) throw new Error('请选择场景和预算');
+        nav('matches/' + form.dataset.recipient + '?occasion=' + encodeURIComponent(data.occasion) + '&price_range=' + encodeURIComponent(data.price_range));
+        return;
+      }
       else {
         const value = data.display_name.trim();
         if (!value || Array.from(value).length > 20) throw new Error('昵称请填写 1–20 个字');
@@ -864,10 +959,10 @@
         }
       } else if (form.dataset.form === 'gift') {
         const id = form.dataset.id;
-        const result = await api('/gifts' + (id ? '/' + id : ''), id ? 'PATCH' : 'POST', {
-          ...payload,
-          ...(!id ? { request_id: form.dataset.requestId } : {})
-        });
+        const savedId = form.dataset.savedId;
+        const result = savedId
+          ? await api('/saved-gifts/' + savedId + '/convert', 'POST', { ...payload, request_id: form.dataset.requestId })
+          : await api('/gifts' + (id ? '/' + id : ''), id ? 'PATCH' : 'POST', { ...payload, ...(!id ? { request_id: form.dataset.requestId } : {}) });
         clearDraft(form);
         if (version === routeVersion) {
           if (form.dataset.return === 'detail') {

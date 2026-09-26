@@ -42,6 +42,7 @@ function harness() {
     reLaunch(o) {
       url = o.url;
     },
+    showToast() {},
     getSystemInfoSync: () => ({ statusBarHeight: 20 }),
     vibrateShort() {}
   };
@@ -155,6 +156,41 @@ test('共用 Gift Sheet：新建无默认反应、失败重试幂等、编辑 PA
   await sheet.save();
   assert.equal(h.calls.at(-1)[1], 'PATCH');
   assert.equal(h.calls.at(-1)[2].note, '后来一直在用');
+});
+test('原生 V0.3：场景预算匹配、收藏给 TA、想送预填并转换', async () => {
+  const h = harness(), page = h.load('pages/giftbook/index.js'), sheet = h.load('components/gift-sheet/index.js');
+  h.setComponent(sheet);
+  const person = { ...recipient, relation_type: '恋人', age_range: '26–30', display_name: 'Rose' };
+  const idea = { id: 's1', gift_name: '围巾', intended_occasion: '生日', intended_price_range: '500–999', source_snapshot: { source_type: 'internal_mock', reaction_level: 4, behavior_evidence: ['used_repeatedly'] }, source_available: true };
+  h.respond(async (path, method) => {
+    if (path.includes('/gift-matches?')) return { items: [{ case: { id: 'c1', gift_name: '围巾', reaction_level: 4, behavior_evidence: ['used_repeatedly'] }, match_reasons: ['同场景','预算内'], saved: false }] };
+    if (path === '/v1/saved-gifts' && method === 'POST') return idea;
+    if (path.endsWith('/saved-gifts')) return [idea];
+    if (path.includes('/convert')) return gift;
+    if (path === '/v1/recipients/r1/gifts') return { items: [gift], next_cursor: null };
+    return {};
+  });
+  page.setData({ active: person, recipients: [person] });
+  page.findGift();
+  assert.equal(page.data.sheet, 'find');
+  await page.findMatches();
+  assert.match(page.data.sheetError, /场景和预算/);
+  page.findPick({ currentTarget: { dataset: { field: 'findOccasion' } }, detail: { value: String(page.data.findOccasions.indexOf('生日')) } });
+  page.findPick({ currentTarget: { dataset: { field: 'findPrice' } }, detail: { value: String(page.data.findPrices.indexOf('500–999')) } });
+  await page.findMatches();
+  assert.equal(page.data.matches[0].reason_text, '同场景 · 预算内');
+  await page.saveMatch({ currentTarget: { dataset: { id: 'c1' } } });
+  assert.equal(page.data.matches[0].saved, true);
+  assert.deepEqual(structuredClone(h.calls.find((call) => call[0] === '/v1/saved-gifts')[2]), { recipient_id: 'r1', source_case_id: 'c1', intended_occasion: '生日', intended_price_range: '500–999' });
+  await page.showSaved();
+  assert.equal(page.data.savedGifts[0].gift_name, '围巾');
+  page.convertSaved({ currentTarget: { dataset: { id: 's1' } } });
+  assert.equal(sheet.data.form.gift_name, '围巾');
+  assert.equal(sheet.data.form.occasion, '生日');
+  assert.equal(sheet.data.form.reaction_level, null);
+  sheet.reaction({ currentTarget: { dataset: { value: 4 } } });
+  await sheet.save();
+  assert.equal(h.calls.at(-1)[0], '/v1/saved-gifts/s1/convert');
 });
 test('首页日志分页去重、删除确认和退出保留数据', async () => {
   const h = harness();

@@ -1,0 +1,1852 @@
+[
+  {
+    "seed_key": "v03_mock_001",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "恋人",
+    "age_range": "18–22",
+    "occasion": "生日",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_002",
+    "source_type": "internal_mock",
+    "gift_name": "品牌钱包",
+    "relation_type": "配偶",
+    "age_range": "31–35",
+    "occasion": "其他",
+    "price_range": "300–499",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_003",
+    "source_type": "internal_mock",
+    "gift_name": "皮具礼盒",
+    "relation_type": "家人",
+    "age_range": "51–60",
+    "occasion": "日常",
+    "price_range": "1000–1499",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_004",
+    "source_type": "internal_mock",
+    "gift_name": "桌面小摆件",
+    "relation_type": "朋友",
+    "age_range": "23–25",
+    "occasion": "感谢",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_005",
+    "source_type": "internal_mock",
+    "gift_name": "筋膜枪",
+    "relation_type": "同事",
+    "age_range": "36–40",
+    "occasion": "节日",
+    "price_range": "300–499",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_006",
+    "source_type": "internal_mock",
+    "gift_name": "游戏主机配件套装",
+    "relation_type": "领导",
+    "age_range": "60+",
+    "occasion": "纪念日",
+    "price_range": "1000–1499",
+    "wanted_level": "没提过",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "功能没问题，但不是对方真正需要的。"
+  },
+  {
+    "seed_key": "v03_mock_007",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡豆",
+    "relation_type": "客户",
+    "age_range": "26–30",
+    "occasion": "纪念日",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_008",
+    "source_type": "internal_mock",
+    "gift_name": "香水小容量礼盒",
+    "relation_type": "其他",
+    "age_range": "41–50",
+    "occasion": "生日",
+    "price_range": "300–499",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_009",
+    "source_type": "internal_mock",
+    "gift_name": "城市周末旅行",
+    "relation_type": "恋人",
+    "age_range": "23–25",
+    "occasion": "其他",
+    "price_range": "1000–1499",
+    "wanted_level": "明确想要",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "以后这类礼物需要先确认需求。"
+  },
+  {
+    "seed_key": "v03_mock_010",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "配偶",
+    "age_range": "36–40",
+    "occasion": "日常",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_011",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "家人",
+    "age_range": "60+",
+    "occasion": "感谢",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_012",
+    "source_type": "internal_mock",
+    "gift_name": "高端机械表",
+    "relation_type": "朋友",
+    "age_range": "26–30",
+    "occasion": "节日",
+    "price_range": "1500+",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_013",
+    "source_type": "internal_mock",
+    "gift_name": "围巾",
+    "relation_type": "同事",
+    "age_range": "41–50",
+    "occasion": "节日",
+    "price_range": "100–299",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_014",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡机",
+    "relation_type": "领导",
+    "age_range": "18–22",
+    "occasion": "纪念日",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_015",
+    "source_type": "internal_mock",
+    "gift_name": "平板电脑",
+    "relation_type": "客户",
+    "age_range": "31–35",
+    "occasion": "生日",
+    "price_range": "1500+",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_016",
+    "source_type": "internal_mock",
+    "gift_name": "拼图",
+    "relation_type": "其他",
+    "age_range": "51–60",
+    "occasion": "其他",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_017",
+    "source_type": "internal_mock",
+    "gift_name": "周末短途酒店",
+    "relation_type": "恋人",
+    "age_range": "26–30",
+    "occasion": "日常",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_018",
+    "source_type": "internal_mock",
+    "gift_name": "双人度假酒店",
+    "relation_type": "配偶",
+    "age_range": "41–50",
+    "occasion": "感谢",
+    "price_range": "1500+",
+    "wanted_level": "暗示过",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "品类选对了，具体款式没选准。"
+  },
+  {
+    "seed_key": "v03_mock_019",
+    "source_type": "internal_mock",
+    "gift_name": "保温杯",
+    "relation_type": "家人",
+    "age_range": "18–22",
+    "occasion": "感谢",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_020",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "朋友",
+    "age_range": "31–35",
+    "occasion": "节日",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_021",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "同事",
+    "age_range": "51–60",
+    "occasion": "纪念日",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "这次明显没送到点上。"
+  },
+  {
+    "seed_key": "v03_mock_022",
+    "source_type": "internal_mock",
+    "gift_name": "品牌钱包",
+    "relation_type": "领导",
+    "age_range": "23–25",
+    "occasion": "生日",
+    "price_range": "300–499",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_023",
+    "source_type": "internal_mock",
+    "gift_name": "皮具礼盒",
+    "relation_type": "客户",
+    "age_range": "36–40",
+    "occasion": "其他",
+    "price_range": "1000–1499",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_024",
+    "source_type": "internal_mock",
+    "gift_name": "桌面小摆件",
+    "relation_type": "其他",
+    "age_range": "60+",
+    "occasion": "日常",
+    "price_range": "0–99",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_025",
+    "source_type": "internal_mock",
+    "gift_name": "筋膜枪",
+    "relation_type": "恋人",
+    "age_range": "31–35",
+    "occasion": "日常",
+    "price_range": "300–499",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_026",
+    "source_type": "internal_mock",
+    "gift_name": "游戏主机配件套装",
+    "relation_type": "配偶",
+    "age_range": "51–60",
+    "occasion": "感谢",
+    "price_range": "1000–1499",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_027",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡豆",
+    "relation_type": "家人",
+    "age_range": "23–25",
+    "occasion": "节日",
+    "price_range": "0–99",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_028",
+    "source_type": "internal_mock",
+    "gift_name": "香水小容量礼盒",
+    "relation_type": "朋友",
+    "age_range": "36–40",
+    "occasion": "纪念日",
+    "price_range": "300–499",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_029",
+    "source_type": "internal_mock",
+    "gift_name": "城市周末旅行",
+    "relation_type": "同事",
+    "age_range": "60+",
+    "occasion": "生日",
+    "price_range": "1000–1499",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_030",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "领导",
+    "age_range": "26–30",
+    "occasion": "其他",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "礼貌收下了，但后来使用不多。"
+  },
+  {
+    "seed_key": "v03_mock_031",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "客户",
+    "age_range": "41–50",
+    "occasion": "其他",
+    "price_range": "500–999",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_032",
+    "source_type": "internal_mock",
+    "gift_name": "高端机械表",
+    "relation_type": "其他",
+    "age_range": "18–22",
+    "occasion": "日常",
+    "price_range": "1500+",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_033",
+    "source_type": "internal_mock",
+    "gift_name": "围巾",
+    "relation_type": "恋人",
+    "age_range": "36–40",
+    "occasion": "感谢",
+    "price_range": "100–299",
+    "wanted_level": "明确想要",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "对方基本没使用，后续换掉了。"
+  },
+  {
+    "seed_key": "v03_mock_034",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡机",
+    "relation_type": "配偶",
+    "age_range": "60+",
+    "occasion": "节日",
+    "price_range": "500–999",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_035",
+    "source_type": "internal_mock",
+    "gift_name": "平板电脑",
+    "relation_type": "家人",
+    "age_range": "26–30",
+    "occasion": "纪念日",
+    "price_range": "1500+",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_036",
+    "source_type": "internal_mock",
+    "gift_name": "拼图",
+    "relation_type": "朋友",
+    "age_range": "41–50",
+    "occasion": "生日",
+    "price_range": "100–299",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_037",
+    "source_type": "internal_mock",
+    "gift_name": "周末短途酒店",
+    "relation_type": "同事",
+    "age_range": "18–22",
+    "occasion": "生日",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_038",
+    "source_type": "internal_mock",
+    "gift_name": "双人度假酒店",
+    "relation_type": "领导",
+    "age_range": "31–35",
+    "occasion": "其他",
+    "price_range": "1500+",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_039",
+    "source_type": "internal_mock",
+    "gift_name": "保温杯",
+    "relation_type": "客户",
+    "age_range": "51–60",
+    "occasion": "日常",
+    "price_range": "100–299",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_040",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "其他",
+    "age_range": "23–25",
+    "occasion": "感谢",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_041",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "恋人",
+    "age_range": "41–50",
+    "occasion": "节日",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_042",
+    "source_type": "internal_mock",
+    "gift_name": "品牌钱包",
+    "relation_type": "配偶",
+    "age_range": "18–22",
+    "occasion": "纪念日",
+    "price_range": "300–499",
+    "wanted_level": "暗示过",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "功能没问题，但不是对方真正需要的。"
+  },
+  {
+    "seed_key": "v03_mock_043",
+    "source_type": "internal_mock",
+    "gift_name": "皮具礼盒",
+    "relation_type": "家人",
+    "age_range": "31–35",
+    "occasion": "纪念日",
+    "price_range": "1000–1499",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_044",
+    "source_type": "internal_mock",
+    "gift_name": "桌面小摆件",
+    "relation_type": "朋友",
+    "age_range": "51–60",
+    "occasion": "生日",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_045",
+    "source_type": "internal_mock",
+    "gift_name": "筋膜枪",
+    "relation_type": "同事",
+    "age_range": "23–25",
+    "occasion": "其他",
+    "price_range": "300–499",
+    "wanted_level": "没提过",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "以后这类礼物需要先确认需求。"
+  },
+  {
+    "seed_key": "v03_mock_046",
+    "source_type": "internal_mock",
+    "gift_name": "游戏主机配件套装",
+    "relation_type": "领导",
+    "age_range": "36–40",
+    "occasion": "日常",
+    "price_range": "1000–1499",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_047",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡豆",
+    "relation_type": "客户",
+    "age_range": "60+",
+    "occasion": "感谢",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_048",
+    "source_type": "internal_mock",
+    "gift_name": "香水小容量礼盒",
+    "relation_type": "其他",
+    "age_range": "26–30",
+    "occasion": "节日",
+    "price_range": "300–499",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_049",
+    "source_type": "internal_mock",
+    "gift_name": "城市周末旅行",
+    "relation_type": "恋人",
+    "age_range": "51–60",
+    "occasion": "节日",
+    "price_range": "1000–1499",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_050",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "配偶",
+    "age_range": "23–25",
+    "occasion": "纪念日",
+    "price_range": "0–99",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_051",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "家人",
+    "age_range": "36–40",
+    "occasion": "生日",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_052",
+    "source_type": "internal_mock",
+    "gift_name": "高端机械表",
+    "relation_type": "朋友",
+    "age_range": "60+",
+    "occasion": "其他",
+    "price_range": "1500+",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_053",
+    "source_type": "internal_mock",
+    "gift_name": "围巾",
+    "relation_type": "同事",
+    "age_range": "26–30",
+    "occasion": "日常",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_054",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡机",
+    "relation_type": "领导",
+    "age_range": "41–50",
+    "occasion": "感谢",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "品类选对了，具体款式没选准。"
+  },
+  {
+    "seed_key": "v03_mock_055",
+    "source_type": "internal_mock",
+    "gift_name": "平板电脑",
+    "relation_type": "客户",
+    "age_range": "18–22",
+    "occasion": "感谢",
+    "price_range": "1500+",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_056",
+    "source_type": "internal_mock",
+    "gift_name": "拼图",
+    "relation_type": "其他",
+    "age_range": "31–35",
+    "occasion": "节日",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_057",
+    "source_type": "internal_mock",
+    "gift_name": "周末短途酒店",
+    "relation_type": "恋人",
+    "age_range": "60+",
+    "occasion": "纪念日",
+    "price_range": "500–999",
+    "wanted_level": "暗示过",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "这次明显没送到点上。"
+  },
+  {
+    "seed_key": "v03_mock_058",
+    "source_type": "internal_mock",
+    "gift_name": "双人度假酒店",
+    "relation_type": "配偶",
+    "age_range": "26–30",
+    "occasion": "生日",
+    "price_range": "1500+",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_059",
+    "source_type": "internal_mock",
+    "gift_name": "保温杯",
+    "relation_type": "家人",
+    "age_range": "41–50",
+    "occasion": "其他",
+    "price_range": "100–299",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_060",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "朋友",
+    "age_range": "18–22",
+    "occasion": "日常",
+    "price_range": "500–999",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_061",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "同事",
+    "age_range": "31–35",
+    "occasion": "日常",
+    "price_range": "0–99",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_062",
+    "source_type": "internal_mock",
+    "gift_name": "品牌钱包",
+    "relation_type": "领导",
+    "age_range": "51–60",
+    "occasion": "感谢",
+    "price_range": "300–499",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_063",
+    "source_type": "internal_mock",
+    "gift_name": "皮具礼盒",
+    "relation_type": "客户",
+    "age_range": "23–25",
+    "occasion": "节日",
+    "price_range": "1000–1499",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_064",
+    "source_type": "internal_mock",
+    "gift_name": "桌面小摆件",
+    "relation_type": "其他",
+    "age_range": "36–40",
+    "occasion": "纪念日",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_065",
+    "source_type": "internal_mock",
+    "gift_name": "筋膜枪",
+    "relation_type": "恋人",
+    "age_range": "18–22",
+    "occasion": "生日",
+    "price_range": "300–499",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_066",
+    "source_type": "internal_mock",
+    "gift_name": "游戏主机配件套装",
+    "relation_type": "配偶",
+    "age_range": "31–35",
+    "occasion": "其他",
+    "price_range": "1000–1499",
+    "wanted_level": "没提过",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "礼貌收下了，但后来使用不多。"
+  },
+  {
+    "seed_key": "v03_mock_067",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡豆",
+    "relation_type": "家人",
+    "age_range": "51–60",
+    "occasion": "其他",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_068",
+    "source_type": "internal_mock",
+    "gift_name": "香水小容量礼盒",
+    "relation_type": "朋友",
+    "age_range": "23–25",
+    "occasion": "日常",
+    "price_range": "300–499",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_069",
+    "source_type": "internal_mock",
+    "gift_name": "城市周末旅行",
+    "relation_type": "同事",
+    "age_range": "36–40",
+    "occasion": "感谢",
+    "price_range": "1000–1499",
+    "wanted_level": "没提过",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "对方基本没使用，后续换掉了。"
+  },
+  {
+    "seed_key": "v03_mock_070",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "领导",
+    "age_range": "60+",
+    "occasion": "节日",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_071",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "客户",
+    "age_range": "26–30",
+    "occasion": "纪念日",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_072",
+    "source_type": "internal_mock",
+    "gift_name": "高端机械表",
+    "relation_type": "其他",
+    "age_range": "41–50",
+    "occasion": "生日",
+    "price_range": "1500+",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_073",
+    "source_type": "internal_mock",
+    "gift_name": "围巾",
+    "relation_type": "恋人",
+    "age_range": "23–25",
+    "occasion": "生日",
+    "price_range": "100–299",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_074",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡机",
+    "relation_type": "配偶",
+    "age_range": "36–40",
+    "occasion": "其他",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_075",
+    "source_type": "internal_mock",
+    "gift_name": "平板电脑",
+    "relation_type": "家人",
+    "age_range": "60+",
+    "occasion": "日常",
+    "price_range": "1500+",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_076",
+    "source_type": "internal_mock",
+    "gift_name": "拼图",
+    "relation_type": "朋友",
+    "age_range": "26–30",
+    "occasion": "感谢",
+    "price_range": "100–299",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_077",
+    "source_type": "internal_mock",
+    "gift_name": "周末短途酒店",
+    "relation_type": "同事",
+    "age_range": "41–50",
+    "occasion": "节日",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_078",
+    "source_type": "internal_mock",
+    "gift_name": "双人度假酒店",
+    "relation_type": "领导",
+    "age_range": "18–22",
+    "occasion": "纪念日",
+    "price_range": "1500+",
+    "wanted_level": "暗示过",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "功能没问题，但不是对方真正需要的。"
+  },
+  {
+    "seed_key": "v03_mock_079",
+    "source_type": "internal_mock",
+    "gift_name": "保温杯",
+    "relation_type": "客户",
+    "age_range": "31–35",
+    "occasion": "纪念日",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_080",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "其他",
+    "age_range": "51–60",
+    "occasion": "生日",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_081",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "恋人",
+    "age_range": "26–30",
+    "occasion": "其他",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "以后这类礼物需要先确认需求。"
+  },
+  {
+    "seed_key": "v03_mock_082",
+    "source_type": "internal_mock",
+    "gift_name": "品牌钱包",
+    "relation_type": "配偶",
+    "age_range": "41–50",
+    "occasion": "日常",
+    "price_range": "300–499",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_083",
+    "source_type": "internal_mock",
+    "gift_name": "皮具礼盒",
+    "relation_type": "家人",
+    "age_range": "18–22",
+    "occasion": "感谢",
+    "price_range": "1000–1499",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_084",
+    "source_type": "internal_mock",
+    "gift_name": "桌面小摆件",
+    "relation_type": "朋友",
+    "age_range": "31–35",
+    "occasion": "节日",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_085",
+    "source_type": "internal_mock",
+    "gift_name": "筋膜枪",
+    "relation_type": "同事",
+    "age_range": "51–60",
+    "occasion": "节日",
+    "price_range": "300–499",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_086",
+    "source_type": "internal_mock",
+    "gift_name": "游戏主机配件套装",
+    "relation_type": "领导",
+    "age_range": "23–25",
+    "occasion": "纪念日",
+    "price_range": "1000–1499",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_087",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡豆",
+    "relation_type": "客户",
+    "age_range": "36–40",
+    "occasion": "生日",
+    "price_range": "0–99",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_088",
+    "source_type": "internal_mock",
+    "gift_name": "香水小容量礼盒",
+    "relation_type": "其他",
+    "age_range": "60+",
+    "occasion": "其他",
+    "price_range": "300–499",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_089",
+    "source_type": "internal_mock",
+    "gift_name": "城市周末旅行",
+    "relation_type": "恋人",
+    "age_range": "31–35",
+    "occasion": "日常",
+    "price_range": "1000–1499",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_090",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "配偶",
+    "age_range": "51–60",
+    "occasion": "感谢",
+    "price_range": "0–99",
+    "wanted_level": "没提过",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "品类选对了，具体款式没选准。"
+  },
+  {
+    "seed_key": "v03_mock_091",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "家人",
+    "age_range": "23–25",
+    "occasion": "感谢",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_092",
+    "source_type": "internal_mock",
+    "gift_name": "高端机械表",
+    "relation_type": "朋友",
+    "age_range": "36–40",
+    "occasion": "节日",
+    "price_range": "1500+",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_093",
+    "source_type": "internal_mock",
+    "gift_name": "围巾",
+    "relation_type": "同事",
+    "age_range": "60+",
+    "occasion": "纪念日",
+    "price_range": "100–299",
+    "wanted_level": "明确想要",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "这次明显没送到点上。"
+  },
+  {
+    "seed_key": "v03_mock_094",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡机",
+    "relation_type": "领导",
+    "age_range": "26–30",
+    "occasion": "生日",
+    "price_range": "500–999",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_095",
+    "source_type": "internal_mock",
+    "gift_name": "平板电脑",
+    "relation_type": "客户",
+    "age_range": "41–50",
+    "occasion": "其他",
+    "price_range": "1500+",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_096",
+    "source_type": "internal_mock",
+    "gift_name": "拼图",
+    "relation_type": "其他",
+    "age_range": "18–22",
+    "occasion": "日常",
+    "price_range": "100–299",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_097",
+    "source_type": "internal_mock",
+    "gift_name": "周末短途酒店",
+    "relation_type": "恋人",
+    "age_range": "36–40",
+    "occasion": "日常",
+    "price_range": "500–999",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_098",
+    "source_type": "internal_mock",
+    "gift_name": "双人度假酒店",
+    "relation_type": "配偶",
+    "age_range": "60+",
+    "occasion": "感谢",
+    "price_range": "1500+",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_099",
+    "source_type": "internal_mock",
+    "gift_name": "保温杯",
+    "relation_type": "家人",
+    "age_range": "26–30",
+    "occasion": "节日",
+    "price_range": "100–299",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_100",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "朋友",
+    "age_range": "41–50",
+    "occasion": "纪念日",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  },
+  {
+    "seed_key": "v03_mock_101",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "同事",
+    "age_range": "18–22",
+    "occasion": "生日",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_102",
+    "source_type": "internal_mock",
+    "gift_name": "品牌钱包",
+    "relation_type": "领导",
+    "age_range": "31–35",
+    "occasion": "其他",
+    "price_range": "300–499",
+    "wanted_level": "暗示过",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "礼貌收下了，但后来使用不多。"
+  },
+  {
+    "seed_key": "v03_mock_103",
+    "source_type": "internal_mock",
+    "gift_name": "皮具礼盒",
+    "relation_type": "客户",
+    "age_range": "51–60",
+    "occasion": "其他",
+    "price_range": "1000–1499",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "包装不重要，实用性更重要。"
+  },
+  {
+    "seed_key": "v03_mock_104",
+    "source_type": "internal_mock",
+    "gift_name": "桌面小摆件",
+    "relation_type": "其他",
+    "age_range": "23–25",
+    "occasion": "日常",
+    "price_range": "0–99",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_105",
+    "source_type": "internal_mock",
+    "gift_name": "筋膜枪",
+    "relation_type": "恋人",
+    "age_range": "41–50",
+    "occasion": "感谢",
+    "price_range": "300–499",
+    "wanted_level": "暗示过",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "对方基本没使用，后续换掉了。"
+  },
+  {
+    "seed_key": "v03_mock_106",
+    "source_type": "internal_mock",
+    "gift_name": "游戏主机配件套装",
+    "relation_type": "配偶",
+    "age_range": "18–22",
+    "occasion": "节日",
+    "price_range": "1000–1499",
+    "wanted_level": "明确想要",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_107",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡豆",
+    "relation_type": "家人",
+    "age_range": "31–35",
+    "occasion": "纪念日",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "礼物和当下场景贴得很紧。"
+  },
+  {
+    "seed_key": "v03_mock_108",
+    "source_type": "internal_mock",
+    "gift_name": "香水小容量礼盒",
+    "relation_type": "朋友",
+    "age_range": "51–60",
+    "occasion": "生日",
+    "price_range": "300–499",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_109",
+    "source_type": "internal_mock",
+    "gift_name": "城市周末旅行",
+    "relation_type": "同事",
+    "age_range": "23–25",
+    "occasion": "生日",
+    "price_range": "1000–1499",
+    "wanted_level": "明确想要",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_110",
+    "source_type": "internal_mock",
+    "gift_name": "手写卡片",
+    "relation_type": "领导",
+    "age_range": "36–40",
+    "occasion": "其他",
+    "price_range": "0–99",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_111",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "客户",
+    "age_range": "60+",
+    "occasion": "日常",
+    "price_range": "500–999",
+    "wanted_level": "没提过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_112",
+    "source_type": "internal_mock",
+    "gift_name": "高端机械表",
+    "relation_type": "其他",
+    "age_range": "26–30",
+    "occasion": "感谢",
+    "price_range": "1500+",
+    "wanted_level": "明确想要",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "适合当稳妥选择，不算特别出挑。"
+  },
+  {
+    "seed_key": "v03_mock_113",
+    "source_type": "internal_mock",
+    "gift_name": "围巾",
+    "relation_type": "恋人",
+    "age_range": "51–60",
+    "occasion": "节日",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "happy_on_receive",
+      "used_immediately",
+      "used_repeatedly"
+    ],
+    "experience": "对方之前提过类似需求，所以反应很直接。"
+  },
+  {
+    "seed_key": "v03_mock_114",
+    "source_type": "internal_mock",
+    "gift_name": "咖啡机",
+    "relation_type": "配偶",
+    "age_range": "23–25",
+    "occasion": "纪念日",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 2,
+    "behavior_evidence": [
+      "rarely_used"
+    ],
+    "experience": "功能没问题，但不是对方真正需要的。"
+  },
+  {
+    "seed_key": "v03_mock_115",
+    "source_type": "internal_mock",
+    "gift_name": "平板电脑",
+    "relation_type": "家人",
+    "age_range": "36–40",
+    "occasion": "纪念日",
+    "price_range": "1500+",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "mentioned_later"
+    ],
+    "experience": "选对具体型号比选大类更关键。"
+  },
+  {
+    "seed_key": "v03_mock_116",
+    "source_type": "internal_mock",
+    "gift_name": "拼图",
+    "relation_type": "朋友",
+    "age_range": "60+",
+    "occasion": "生日",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "如果更了解偏好，效果会更好。"
+  },
+  {
+    "seed_key": "v03_mock_117",
+    "source_type": "internal_mock",
+    "gift_name": "周末短途酒店",
+    "relation_type": "同事",
+    "age_range": "26–30",
+    "occasion": "其他",
+    "price_range": "500–999",
+    "wanted_level": "明确想要",
+    "reaction_level": 1,
+    "behavior_evidence": [
+      "returned_or_exchanged"
+    ],
+    "experience": "以后这类礼物需要先确认需求。"
+  },
+  {
+    "seed_key": "v03_mock_118",
+    "source_type": "internal_mock",
+    "gift_name": "双人度假酒店",
+    "relation_type": "领导",
+    "age_range": "41–50",
+    "occasion": "日常",
+    "price_range": "1500+",
+    "wanted_level": "暗示过",
+    "reaction_level": 4,
+    "behavior_evidence": [
+      "used_repeatedly"
+    ],
+    "experience": "提前观察使用习惯会更稳。"
+  },
+  {
+    "seed_key": "v03_mock_119",
+    "source_type": "internal_mock",
+    "gift_name": "保温杯",
+    "relation_type": "客户",
+    "age_range": "18–22",
+    "occasion": "感谢",
+    "price_range": "100–299",
+    "wanted_level": "没提过",
+    "reaction_level": 5,
+    "behavior_evidence": [
+      "used_immediately",
+      "shared_with_others"
+    ],
+    "experience": "比起贵，真正命中兴趣更重要。"
+  },
+  {
+    "seed_key": "v03_mock_120",
+    "source_type": "internal_mock",
+    "gift_name": "拍立得",
+    "relation_type": "其他",
+    "age_range": "31–35",
+    "occasion": "节日",
+    "price_range": "500–999",
+    "wanted_level": "暗示过",
+    "reaction_level": 3,
+    "behavior_evidence": [
+      "happy_on_receive"
+    ],
+    "experience": "整体不错，但惊喜感一般。"
+  }
+]

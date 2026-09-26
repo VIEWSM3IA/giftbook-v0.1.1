@@ -1,0 +1,157 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const http = require('node:http');
+const { randomBytes, randomUUID } = require('node:crypto');
+const { spawnSync } = require('node:child_process');
+const { Pool } = require('pg');
+const { createApi } = require('../server/app');
+const { importSeed } = require('../scripts/seed-v03');
+const seedCases = require('../data/seed_cases_v03.json');
+const { matchCase, sortMatches } = require('../server/matching');
+const domain = require('../miniprogram/utils/domain');
+
+test('V0.3 matching scores are deterministic and preserve negative outcomes', () => {
+  const person = { relation_type: '恋人', age_range: '26–30' };
+  const criteria = { occasion: '生日', price_range: '500–999' };
+  const base = { id: 'a', relation_type: '恋人', age_range: '26–30', occasion: '生日', price_range: '500–999', reaction_level: 5, behavior_evidence: ['used_repeatedly'], helpful_count: 0, updated_at: '2026-01-01' };
+  assert.equal(matchCase(person, criteria, base).match_score, 99);
+  assert.equal(matchCase(person, criteria, { ...base, relation_type: '配偶' }).match_score, 87);
+  assert.equal(matchCase(person, criteria, { ...base, relation_type: '同事' }).match_score, 69);
+  assert.equal(matchCase(person, criteria, { ...base, age_range: '23–25' }).match_score, 89);
+  assert.equal(matchCase(person, criteria, { ...base, price_range: '300–499' }).match_score, 94);
+  assert.equal(matchCase(person, criteria, { ...base, price_range: '1000–1499' }).match_score, 86);
+  assert.ok(matchCase(person, criteria, { ...base, reaction_level: 1, behavior_evidence: ['returned_or_exchanged'] }).match_score < 99);
+  const tied = ['c','a','b'].map((id) => matchCase(person, criteria, { ...base, id }));
+  assert.deepEqual(tied.sort(sortMatches).map((item) => item.case.id), ['a','b','c']);
+});
+
+test('V0.3 seed, source boundary, saved gift ownership and atomic conversion', async (t) => {
+  const connectionString = process.env.DATABASE_URL || 'postgresql://giftbook@127.0.0.1:55437/giftbook';
+  const admin = new Pool({ connectionString });
+  const schema = `test_v03_${randomBytes(8).toString('hex')}`;
+  await admin.query(`CREATE SCHEMA ${schema}`);
+  const pool = new Pool({ connectionString, options: `-c search_path=${schema}` });
+  const servers = [];
+  const logs = [];
+  t.after(async () => {
+    for (const server of servers) await new Promise((resolve) => server.close(resolve));
+    await pool.end();
+    await admin.query(`DROP SCHEMA ${schema} CASCADE`);
+    await admin.end();
+  });
+  await assert.rejects(importSeed(pool, { NODE_ENV: 'production' }), /requires ALLOW_INTERNAL_MOCK_IMPORT/);
+  assert.equal(await importSeed(pool, { NODE_ENV: 'development' }), 120);
+  assert.equal(await importSeed(pool, { NODE_ENV: 'development' }), 120);
+  await pool.query("UPDATE public_cases SET status='removed',gift_name='corrupted',updated_at='2000-01-01' WHERE seed_key=$1", [seedCases[0].seed_key]);
+  assert.equal(await importSeed(pool, { NODE_ENV: 'development' }), 120);
+  const restored = (await pool.query('SELECT status,gift_name,updated_at FROM public_cases WHERE seed_key=$1', [seedCases[0].seed_key])).rows[0];
+  assert.equal(restored.status, 'published');
+  assert.equal(restored.gift_name, seedCases[0].gift_name);
+  assert.ok(new Date(restored.updated_at).getFullYear() > 2000);
+  assert.equal(Number((await pool.query("SELECT count(*) FROM public_cases WHERE source_type='internal_mock'")).rows[0].count), 120);
+  for (const [field, expected] of [['relation_type',8],['age_range',8],['occasion',6],['price_range',6]])
+    assert.equal(Number((await pool.query(`SELECT count(DISTINCT ${field}) AS count FROM public_cases WHERE source_type='internal_mock'`)).rows[0].count), expected);
+  assert.ok((await pool.query("SELECT count(*) FROM public_cases WHERE reaction_level IN (1,2) AND behavior_evidence && ARRAY['rarely_used','returned_or_exchanged']::text[]")).rows[0].count > 0);
+  async function listen(env) {
+    const handler = createApi({ pool, env, log: (entry) => logs.push(entry) });
+    const server = http.createServer((req, res) => handler(req, res));
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    servers.push(server);
+    return `http://127.0.0.1:${server.address().port}`;
+  }
+  const dev = await listen({ NODE_ENV: 'development', ALLOW_LOCAL_LOGIN: 'true' });
+  const prod = await listen({ NODE_ENV: 'production' });
+  async function req(base, method, path, token, input, status = 200) {
+    const response = await fetch(base + path, { method, headers: { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(input ? { 'Content-Type': 'application/json' } : {}) }, body: input ? JSON.stringify(input) : undefined });
+    const json = await response.json();
+    assert.equal(response.status, status, JSON.stringify(json));
+    return json.data ?? json;
+  }
+  const a = await req(dev,'POST','/v1/auth/local/login',null,{ device_key: randomBytes(32).toString('hex') });
+  const b = await req(dev,'POST','/v1/auth/local/login',null,{ device_key: randomBytes(32).toString('hex') });
+  const person = await req(dev,'POST','/v1/recipients',a.token,{ display_name:'Rose', relation_type:'恋人', age_range:'26–30', tags:[], gender:'', note:'' });
+  const query = `?occasion=${encodeURIComponent('生日')}&price_range=${encodeURIComponent('500–999')}`;
+  await req(dev,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,b.token,null,404);
+  await req(dev,'GET',`/v1/recipients/${person.id}/saved-gifts`,b.token,null,404);
+  const first = await req(dev,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,a.token);
+  assert.ok(first.items.length > 0);
+  for (let i = 0; i < 2; i++)
+    assert.deepEqual((await req(dev,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,a.token)).items, first.items);
+  const mock = first.items[0].case;
+  assert.equal(mock.source_type,'internal_mock');
+  const verifiedId = randomUUID();
+  await pool.query(
+    `INSERT INTO public_cases(id,seed_key,source_type,gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,status)
+     SELECT $1,'v03_verified_test','verified_seed',gift_name,relation_type,age_range,occasion,price_range,wanted_level,reaction_level,behavior_evidence,experience,'published'
+     FROM public_cases WHERE id=$2`, [verifiedId,mock.id]
+  );
+  const visibleSeeds = (await req(dev,'GET','/v1/cases',a.token)).items.filter((item) => item.source_type !== 'user_generated');
+  assert.ok(visibleSeeds.length > 0);
+  assert.ok(visibleSeeds.every((item) => item.is_mine === false && typeof item.is_mine === 'boolean'));
+  for (const id of [mock.id, verifiedId]) {
+    const detail = await req(dev,'GET',`/v1/cases/${id}`,a.token);
+    assert.equal(detail.is_mine,false);
+    assert.equal(typeof detail.is_mine,'boolean');
+  }
+  for (const key of ['owner_id','source_gift_id','recipient_id','note','price_fen']) assert.equal(Object.hasOwn(mock,key),false);
+  assert.ok(first.items[0].match_reasons.includes('同场景'));
+  assert.equal((await req(prod,'GET','/v1/cases',a.token)).items.some((item) => item.id === mock.id),false);
+  assert.equal((await req(prod,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,a.token)).items.some((item) => item.case.id === mock.id),false);
+  await req(prod,'GET',`/v1/cases/${mock.id}`,a.token,null,404);
+  await req(prod,'POST','/v1/saved-gifts',a.token,{ recipient_id:person.id,source_case_id:mock.id,intended_occasion:'生日',intended_price_range:'500–999' },404);
+  const saveInput = { recipient_id: person.id, source_case_id: mock.id, intended_occasion: '生日', intended_price_range: '500–999' };
+  await req(dev,'POST','/v1/saved-gifts',b.token,saveInput,404);
+  const saved = await req(dev,'POST','/v1/saved-gifts',a.token,saveInput);
+  assert.equal((await req(dev,'POST','/v1/saved-gifts',a.token,saveInput)).id,saved.id);
+  assert.equal(saved.source_snapshot.gift_name,mock.gift_name);
+  assert.equal(saved.source_snapshot.source_type,'internal_mock');
+  assert.equal((await req(prod,'GET',`/v1/recipients/${person.id}/saved-gifts`,a.token)).length,0);
+  await req(prod,'POST',`/v1/saved-gifts/${saved.id}/convert`,a.token,{ gift_name:mock.gift_name,reaction_level:4,request_id:randomUUID() },404);
+  assert.equal(JSON.stringify(saved.source_snapshot).includes('owner_id'),false);
+  assert.equal(JSON.stringify(saved.source_snapshot).includes('price_fen'),false);
+  await req(dev,'DELETE',`/v1/saved-gifts/${saved.id}`,b.token,null,404);
+  const second = first.items.find((item) => item.case.id !== mock.id).case;
+  const removed = await req(dev,'POST','/v1/saved-gifts',a.token,{ ...saveInput, source_case_id: second.id });
+  await req(dev,'DELETE',`/v1/saved-gifts/${removed.id}`,a.token);
+  assert.equal((await req(dev,'GET',`/v1/recipients/${person.id}/saved-gifts`,a.token)).length,1);
+  const voter = await req(dev,'POST','/v1/auth/local/login',null,{ device_key:randomBytes(32).toString('hex') });
+  for (const id of [mock.id, verifiedId]) {
+    assert.equal((await req(dev,'POST',`/v1/cases/${id}/helpful`,voter.token,{})).helpful_count,1);
+  }
+  await req(dev,'DELETE','/v1/me',voter.token);
+  assert.equal(Number((await pool.query('SELECT count(*) FROM case_helpful WHERE user_id=$1',[voter.user.id])).rows[0].count),0);
+  for (const id of [mock.id, verifiedId])
+    assert.equal((await req(dev,'GET',`/v1/cases/${id}`,a.token)).helpful_count,0);
+  await pool.query("UPDATE public_cases SET status='removed' WHERE id=$1", [mock.id]);
+  await req(dev,'GET',`/v1/cases/${mock.id}`,a.token,null,404);
+  const snapshot = (await req(dev,'GET',`/v1/recipients/${person.id}/saved-gifts`,a.token))[0];
+  assert.equal(snapshot.gift_name,mock.gift_name);
+  assert.equal(snapshot.source_available,false);
+  const input = { gift_name:mock.gift_name,reaction_level:4,gifted_at:'2026-09-12',occasion:'生日',price_fen:89900,note:'真实结果',request_id:randomUUID() };
+  await req(dev,'POST',`/v1/saved-gifts/${saved.id}/convert`,b.token,input,404);
+  await req(dev,'POST',`/v1/saved-gifts/${saved.id}/convert`,a.token,{ ...input,reaction_level:0 },400);
+  assert.equal(Number((await pool.query('SELECT count(*) FROM gift_records WHERE user_id=$1',[a.user.id])).rows[0].count),0);
+  const gift = await req(dev,'POST',`/v1/saved-gifts/${saved.id}/convert`,a.token,input);
+  assert.equal((await req(dev,'POST',`/v1/saved-gifts/${saved.id}/convert`,a.token,input)).id,gift.id);
+  await req(dev,'POST',`/v1/saved-gifts/${saved.id}/convert`,a.token,{ ...input,request_id:randomUUID() },409);
+  assert.equal((await pool.query('SELECT status,linked_gift_id FROM saved_gifts WHERE id=$1',[saved.id])).rows[0].linked_gift_id,gift.id);
+  assert.equal((await req(dev,'GET',`/v1/recipients/${person.id}/saved-gifts`,a.token)).length,0);
+  assert.equal((await req(dev,'GET',`/v1/recipients/${person.id}/gifts`,a.token)).items[0].id,gift.id);
+  const shared = await req(dev,'POST','/v1/cases',a.token,{ source_gift_id:gift.id,gift_name:gift.gift_name,relation_type:'恋人',age_range:'26–30',occasion:'生日',price_range:'500–999',wanted_level:'没提过',reaction_level:4,behavior_evidence:['used_immediately'],experience:'送出后马上用了' });
+  assert.equal(shared.source_type,'user_generated');
+  assert.equal((await req(dev,'POST',`/v1/cases/${shared.id}/helpful`,a.token,{},400)).error.code,'OWN_CASE');
+  assert.equal((await req(dev,'GET',`/v1/cases/${shared.id}`,a.token)).helpful_count,0);
+  assert.equal((await req(prod,'GET',`/v1/cases/${shared.id}`,a.token)).id,shared.id);
+  assert.equal((await req(prod,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,a.token)).items.some((item) => item.case.id === shared.id),true);
+  const negativeShare = await req(dev,'PATCH',`/v1/cases/${shared.id}`,a.token,{ source_gift_id:gift.id,gift_name:gift.gift_name,relation_type:'恋人',age_range:'26–30',occasion:'生日',price_range:'500–999',wanted_level:'没提过',reaction_level:2,behavior_evidence:['polite_thanks_only'],experience:'只礼貌地说了谢谢' });
+  assert.deepEqual(negativeShare.behavior_evidence,['polite_thanks_only']);
+  assert.equal(domain.evidenceLabels(negativeShare.behavior_evidence),'礼貌感谢');
+  assert.equal(logs.some((entry) => entry.event === 'gift_idea_saved' || entry.event === 'saved_gift_converted'),false);
+  assert.equal(JSON.stringify(logs).includes(person.id),false);
+  assert.equal(JSON.stringify(logs).includes(mock.id),false);
+  assert.equal(JSON.stringify(logs).includes(mock.gift_name),false);
+  assert.equal(JSON.stringify(logs).includes('Rose'),false);
+  const guard = spawnSync(process.execPath,['scripts/seed-v03.js'],{ cwd:require('node:path').join(__dirname,'..'), env:{ ...process.env,NODE_ENV:'production',ALLOW_INTERNAL_MOCK_IMPORT:'' },encoding:'utf8' });
+  assert.notEqual(guard.status,0);
+  assert.match(guard.stderr,/requires ALLOW_INTERNAL_MOCK_IMPORT/);
+});

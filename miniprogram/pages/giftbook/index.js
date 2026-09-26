@@ -3,7 +3,9 @@ const domain = require('../../utils/domain');
 Page({
   data: {
     user: null, avatarText: '我', avatarKey: '', recipients: [], active: null, gifts: [], cursor: null,
-    loading: true, loadingLog: false, error: '', logError: '',
+    loading: true, loadingLog: false, error: '', logError: '', viewMode: 'records', savedGifts: [], savedLoading: false, savedError: '',
+    findOccasions: ['请选择场景', ...domain.OCCASIONS], findPrices: ['请选择预算', ...domain.PRICE_RANGES],
+    findOccasion: '', findPrice: '', matches: [], matchLoading: false, matchError: '',
     sortingId: '', targetId: '', activeTabId: '', railLeft: 0, scrolled: false, statusTop: 0,
     sheet: '', sheetEditId: '', sheetFull: false, sheetBusy: false, sheetError: '', sheetExpanded: false,
     personForm: { display_name: '', relation_type: '', age_range: '', gender: '', tags: [], note: '' },
@@ -28,10 +30,11 @@ Page({
       ]);
       const id = [this.preferredId, this.data.active?.id, me.user.last_active_recipient_id]
         .find((candidate) => recipients.some((person) => person.id === candidate)) || recipients[0]?.id;
+      const preserveView = !this.preferredId && this.data.active?.id === id;
       this.preferredId = '';
       const active = recipients.find((person) => person.id === id) || null;
       this.setData({ user: me.user, avatarText: Array.from(me.user.display_name || '我')[0], avatarKey: me.user.avatar_key || '', recipients, active, loading: false });
-      if (id) await this.selectId(id);
+      if (id) await this.selectId(id, preserveView);
       else this.setData({ active: null, gifts: [], cursor: null });
       if (this.restoreScroll != null && wx.pageScrollTo) {
         wx.pageScrollTo({ scrollTop: this.restoreScroll, duration: 0 });
@@ -41,10 +44,11 @@ Page({
       this.setData({ error: error.message, loading: false });
     }
   },
-  async selectId(id) {
+  async selectId(id, preserveView = false) {
     const active = this.data.recipients.find((person) => person.id === id);
     if (!active) return;
-    this.setData({ active, activeTabId: 'recipient-' + id, gifts: [], cursor: null, logError: '', loadingLog: true });
+    const viewMode = preserveView ? this.data.viewMode : 'records';
+    this.setData({ active, activeTabId: 'recipient-' + id, gifts: [], cursor: null, logError: '', loadingLog: true, viewMode, savedGifts: [] });
     const sequence = this.sequence = (this.sequence || 0) + 1;
     this.activeWrite = (this.activeWrite || Promise.resolve()).catch(() => {}).then(() => store.request('/v1/me/active-recipient', 'PATCH', { recipient_id: id }));
     this.activeWrite.catch((error) => wx.showToast({ title: error.message, icon: 'none' }));
@@ -52,6 +56,7 @@ Page({
       const result = await store.request('/v1/recipients/' + id + '/gifts');
       if (sequence !== this.sequence) return;
       this.setData({ gifts: domain.giftLog(result.items), cursor: result.next_cursor });
+      if (viewMode === 'saved') await this.loadSaved();
     } catch (error) {
       if (sequence === this.sequence) this.setData({ logError: error.message });
     } finally {
@@ -88,7 +93,66 @@ Page({
     if (!this.data.active) return;
     this.selectComponent('#gift-sheet').open({ recipientId: this.data.active.id, recipientName: this.data.active.display_name });
   },
-  giftSheetSaved() { return this.selectId(this.data.active.id); },
+  giftSheetSaved() { this.setData({ viewMode: 'records' }); return this.selectId(this.data.active.id); },
+  showRecords() { this.setData({ viewMode: 'records' }); },
+  showSaved() { this.setData({ viewMode: 'saved' }); return this.loadSaved(); },
+  async loadSaved() {
+    if (!this.data.active) return;
+    const id = this.data.active.id;
+    this.setData({ savedLoading: true, savedError: '' });
+    try {
+      const savedGifts = await store.request('/v1/recipients/' + id + '/saved-gifts');
+      if (this.data.active?.id === id) this.setData({ savedGifts: savedGifts.map((item) => ({ ...item, reaction_label: domain.reaction(item.source_snapshot.reaction_level).label, evidence_label: domain.evidenceLabels(item.source_snapshot.behavior_evidence) })) });
+    } catch (error) { this.setData({ savedError: error.message }); }
+    finally { this.setData({ savedLoading: false }); }
+  },
+  findGift() { if (this.data.active) this.setData({ sheet: 'find', sheetError: '', findOccasion: '', findPrice: '' }); },
+  findPick(e) {
+    const field = e.currentTarget.dataset.field;
+    const list = field === 'findOccasion' ? this.data.findOccasions : this.data.findPrices;
+    this.setData({ [field]: list[Number(e.detail.value)] === list[0] ? '' : list[Number(e.detail.value)], sheetError: '' });
+  },
+  async findMatches() {
+    if (!this.data.findOccasion || !this.data.findPrice) { this.setData({ sheetError: '请选择场景和预算' }); return; }
+    const id = this.data.active.id;
+    this.setData({ sheet: 'matches', matchLoading: true, matchError: '', matches: [] });
+    try {
+      const query = `occasion=${encodeURIComponent(this.data.findOccasion)}&price_range=${encodeURIComponent(this.data.findPrice)}`;
+      const result = await store.request('/v1/recipients/' + id + '/gift-matches?' + query);
+      if (this.data.active?.id === id) this.setData({ matches: result.items.map((entry) => ({ ...entry, id: entry.case.id, reason_text: entry.match_reasons.join(' · '), reaction_label: domain.reaction(entry.case.reaction_level).label, evidence_label: domain.evidenceLabels(entry.case.behavior_evidence) })) });
+    } catch (error) { this.setData({ matchError: error.message }); }
+    finally { this.setData({ matchLoading: false }); }
+  },
+  backFind() { this.setData({ sheet: 'find' }); },
+  openMatch(e) { wx.navigateTo({ url: '/pages/case/detail?id=' + e.currentTarget.dataset.id }); },
+  async saveMatch(e) {
+    const id = e.currentTarget.dataset.id;
+    if (e.currentTarget.dataset.saved) return;
+    try {
+      await store.request('/v1/saved-gifts', 'POST', { recipient_id: this.data.active.id, source_case_id: id, intended_occasion: this.data.findOccasion, intended_price_range: this.data.findPrice });
+      this.setData({ matches: this.data.matches.map((item) => item.case.id === id ? { ...item, saved: true } : item) });
+      wx.showToast({ title: '已收藏给 TA', icon: 'none' });
+    } catch (error) { this.setData({ matchError: error.message }); }
+  },
+  convertSaved(e) {
+    const saved = this.data.savedGifts.find((item) => item.id === e.currentTarget.dataset.id);
+    if (saved) this.selectComponent('#gift-sheet').open({ recipientId: this.data.active.id, recipientName: this.data.active.display_name, saved });
+  },
+  async savedActions(e) {
+    const saved = this.data.savedGifts.find((item) => item.id === e.currentTarget.dataset.id);
+    if (!saved) return;
+    const choice = await new Promise((resolve) => wx.showActionSheet({ itemList: ['查看来源案例', '移除想送'], success: (r) => resolve(r.tapIndex), fail: () => resolve(-1) }));
+    if (choice === 0) {
+      if (saved.source_available) wx.navigateTo({ url: '/pages/case/detail?id=' + saved.source_case_id });
+      else wx.showToast({ title: '来源案例已下架', icon: 'none' });
+    }
+    if (choice === 1) {
+      const confirmed = await new Promise((resolve) => wx.showModal({ title: '移除想送？', content: '这份礼物想法将不再显示。', success: (r) => resolve(r.confirm), fail: () => resolve(false) }));
+      if (!confirmed) return;
+      try { await store.request('/v1/saved-gifts/' + saved.id, 'DELETE'); await this.loadSaved(); }
+      catch (error) { this.setData({ savedError: error.message }); }
+    }
+  },
   account() { this.restoreScroll = this.scrollTop || 0; wx.navigateTo({ url: '/pages/me/index' }); },
   closeSheet() { if (!this.data.sheetBusy) this.setData({ sheet: '', sheetFull: false }); },
   expandSheet() { this.setData({ sheetFull: !this.data.sheetFull }); },
