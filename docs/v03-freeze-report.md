@@ -1,7 +1,7 @@
 # V0.3 最终冻结报告
 
 - 分支：`feat/v03-find-for-ta`；PR：[GitHub #1](https://github.com/VIEWSM3IA/giftbook-v0.1.1/pull/1)。
-- CI：最终收口提交待 GitHub Actions 验证。
+- 修复提交：`57adf75`；CI：[Verify 运行 #36227889448](https://github.com/VIEWSM3IA/giftbook-v0.1.1/actions/runs/36227889448) 与 [PR Verify 运行 #36227891494](https://github.com/VIEWSM3IA/giftbook-v0.1.1/actions/runs/36227891494) 均通过。
 
 ## 构建与数据
 
@@ -32,14 +32,14 @@
 - `npm run check:h5`：通过，使用隔离数据库与本地开发预览端口。
 - `npm run check:v03:h5`：通过，12 张浏览器截图、无页面异常。
 - `NODE_ENV=production npm run seed:v03`：按预期拒绝。
-- GitHub Actions：当前基线 [Verify 运行 #36225373906](https://github.com/VIEWSM3IA/giftbook-v0.1.1/actions/runs/36225373906) 通过；本轮收口提交待验证。
+- GitHub Actions：本轮修复提交的 push 和 PR 两条 Verify 检查均通过，包含 Seed 报告漂移检查和 H5 浏览器闭环。
 
 证据位于 [`docs/evidence/v03/`](evidence/v03/)：12 张截图、匹配及想送 API 样本、生产保护测试输出。
 
 ## 发布门槛
 
 - 最终优化包验收矩阵中的 P0 未解决：`0`；P1 未解决：`0`。
-- **V0.3 FROZEN CANDIDATE**，等待本轮 GitHub Actions 通过后冻结。尚未在微信开发者工具中编译或真机运行，也未将本分支部署到固定公网验收地址。
+- **V0.3 FROZEN**（仓库级）。尚未在微信开发者工具中编译或真机运行，也未将本分支部署到固定公网验收地址。
 - 接受的 P2：游标分页、真实 `verified_seed` 采集、排序调优、真实用户试验、微信接入。
 
 ## 部署与回退边界
