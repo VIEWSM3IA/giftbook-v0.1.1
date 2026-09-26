@@ -7,6 +7,7 @@ const { Pool } = require('pg');
 const { createApi } = require('../server/app');
 const { importSeed } = require('../scripts/seed-v03');
 const { matchCase, sortMatches } = require('../server/matching');
+const domain = require('../miniprogram/utils/domain');
 
 test('V0.3 matching scores are deterministic and preserve negative outcomes', () => {
   const person = { relation_type: '恋人', age_range: '26–30' };
@@ -111,6 +112,9 @@ test('V0.3 seed, source boundary, saved gift ownership and atomic conversion', a
   assert.equal(shared.source_type,'user_generated');
   assert.equal((await req(prod,'GET',`/v1/cases/${shared.id}`,a.token)).id,shared.id);
   assert.equal((await req(prod,'GET',`/v1/recipients/${person.id}/gift-matches${query}`,a.token)).items.some((item) => item.case.id === shared.id),true);
+  const negativeShare = await req(dev,'PATCH',`/v1/cases/${shared.id}`,a.token,{ source_gift_id:gift.id,gift_name:gift.gift_name,relation_type:'恋人',age_range:'26–30',occasion:'生日',price_range:'500–999',wanted_level:'没提过',reaction_level:2,behavior_evidence:['polite_thanks_only'],experience:'只礼貌地说了谢谢' });
+  assert.deepEqual(negativeShare.behavior_evidence,['polite_thanks_only']);
+  assert.equal(domain.evidenceLabels(negativeShare.behavior_evidence),'礼貌感谢');
   assert.equal(logs.some((entry) => entry.event === 'gift_idea_saved' || entry.event === 'saved_gift_converted'),false);
   assert.equal(JSON.stringify(logs).includes(person.id),false);
   assert.equal(JSON.stringify(logs).includes(mock.id),false);
