@@ -20,12 +20,12 @@
 - `npm run check:h5`：通过，使用本地开发预览端口。
 - `npm run check:v03:h5`：通过，浏览器无页面异常。
 - `NODE_ENV=production npm run seed:v03`：按预期拒绝。
+- GitHub Actions：[Verify 运行 #36224585601](https://github.com/VIEWSM3IA/giftbook-v0.1.1/actions/runs/36224585601) 通过，包含安装、结构检查、31 项测试、Seed 导入、V0.2 回归及 V0.3 H5 浏览器闭环。
 
 证据位于 [`docs/evidence/v03/`](evidence/v03/)：12 张截图、匹配及想送 API 样本、生产保护测试输出。
 
 ## 发布门槛
 
-- P0 未解决：`0`。
-- P1 未解决：GitHub Actions 尚未对本次提交运行；原生端尚缺微信开发者工具编译与设备验收。
-- 因以上门槛未完成，**当前不标记为 V0.3 FROZEN CANDIDATE**。
+- 开发包验收矩阵中的 P0 未解决：`0`；P1 未解决：`0`。
+- **V0.3 FROZEN CANDIDATE**。此结论针对仓库代码、H5 浏览器验收和 GitHub Actions；尚未在微信开发者工具中编译或真机运行，也未将本分支部署到固定公网验收地址。
 - 接受的 P2：游标分页、真实 `verified_seed` 采集、排序调优、真实用户试验、微信接入。
