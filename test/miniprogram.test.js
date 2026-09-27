@@ -10,6 +10,7 @@ function harness() {
   let url = '',
     scroll = '',
     confirmation = true,
+    actionSheetChoices = [],
     handler = async () => null,
     component = null;
   const calls = [];
@@ -43,6 +44,7 @@ function harness() {
       url = o.url;
     },
     showToast() {},
+    showActionSheet(options) { options.success({ tapIndex: actionSheetChoices.shift() ?? 0 }); },
     getSystemInfoSync: () => ({ statusBarHeight: 20 }),
     vibrateShort() {}
   };
@@ -91,6 +93,9 @@ function harness() {
     },
     confirm(value) {
       confirmation = value;
+    },
+    chooseActions(...choices) {
+      actionSheetChoices = choices;
     }
   };
 }
@@ -371,6 +376,45 @@ test('首页读取上次停留的 TA、日志并支持切换和排序', async ()
   p.setData({ sortingId: 'r2', targetId: 'r1' });
   await p.dragEnd();
   assert.deepEqual(p.data.recipients.map((person) => person.id), ['r2', 'r1']);
+});
+test('礼物簿总数独立于分页，切换想送保留已加载记录', async () => {
+  const h = harness();
+  const items = Array.from({ length: 43 }, (_, index) => ({ ...gift, id: 'gift-' + index }));
+  h.respond(async (path) => {
+    if (path.includes('/gifts?cursor=')) {
+      const from = path.endsWith('cursor=A') ? 20 : 40;
+      return { items: items.slice(from, from + 20), next_cursor: from === 20 ? 'B' : null };
+    }
+    if (path.endsWith('/gifts')) return { items: items.slice(0, 20), next_cursor: 'A' };
+    if (path.endsWith('/saved-gifts')) return [];
+    return {};
+  });
+  const p = h.load('pages/giftbook/index.js');
+  p.setData({ recipients: [recipient] });
+  await p.selectId('r1');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(p.data.giftCount, 43);
+  assert.equal(p.data.gifts.length, 20);
+  await p.more();
+  assert.equal(p.data.gifts.length, 40);
+  p.showSaved();
+  p.showRecords();
+  assert.equal(p.data.giftCount, 43);
+  assert.equal(p.data.gifts.length, 40);
+  assert.equal(p.data.cursor, 'B');
+  await p.reorder(0, 0);
+  assert.equal(h.calls.filter((call) => call[0] === '/v1/recipients/order').length, 0);
+});
+test('原生 TA 管理点选上移复用排序接口', async () => {
+  const h = harness();
+  h.respond(async (path, method, body) => path === '/v1/recipients/order'
+    ? body.recipient_ids.map((id) => ({ ...recipient, id })) : {});
+  const p = h.load('pages/giftbook/index.js');
+  p.setData({ recipients: ['r1', 'r2', 'r3'].map((id) => ({ ...recipient, id })), active: { ...recipient, id: 'r2' } });
+  h.chooseActions(1, 0);
+  await p.personActions();
+  assert.deepEqual(p.data.recipients.map((person) => person.id), ['r2', 'r1', 'r3']);
+  assert.deepEqual(structuredClone(h.calls.at(-1)[2].recipient_ids), ['r2', 'r1', 'r3']);
 });
 test('切 TA 立即读取礼物，不等待记住 TA 的写入', async () => {
   const h = harness();

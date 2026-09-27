@@ -141,8 +141,43 @@
     return `<nav class="recipient-switcher" aria-label="切换 TA"><div class="recipient-scroll">${people.map((p) => `<button class="recipient-tab ${p.id === activeId ? 'active' : ''}" data-recipient-id="${e(p.id)}" ${p.id === activeId ? 'aria-current="page"' : ''} title="${e(p.display_name)}">${e(p.display_name)}</button>`).join('')}</div><button class="recipient-add" data-go="person-new" aria-label="添加 TA">＋</button></nav>`;
   }
   function logHTML(gifts) {
-    if (!gifts.length) return `<div class="log-empty"><h3>还没有礼物记录</h3><button data-action="add-gift">记第一份</button></div>`;
+    if (!gifts.length) return `<div class="log-empty"><h3>第一份不用记得很完整，礼物名字和 TA 的反应就够了</h3><button data-action="add-gift">记第一份</button></div>`;
     return D.giftLog(gifts).map((g) => `<div class="log-shell" id="gift-${e(g.id)}"><div class="swipe-actions"><button data-go="gift-edit/${e(g.id)}">编辑</button><button data-action="delete-inline" data-id="${e(g.id)}">删除</button></div><article class="log-entry" data-gift-id="${e(g.id)}" tabindex="0" role="button" aria-label="查看${e(g.gift_name)}"><time class="log-date" datetime="${e(g.gifted_at)}"><strong>${e(g.log_date)}</strong>${g.log_year ? `<span>${e(g.log_year)}</span>` : ''}</time><div class="log-title-row"><h3>${e(g.gift_name)}</h3><button class="log-more" data-action="gift-menu" data-id="${e(g.id)}" aria-label="${e(g.gift_name)}更多操作">•••</button></div>${g.log_meta ? `<p class="log-meta">${e(g.log_meta)}</p>` : ''}<p class="log-reaction">${e(g.log_reaction)}</p>${g.note ? `<p class="log-note">${e(g.note)}</p>` : ''}</article></div>`).join('');
+  }
+  function updateBookCounts() {
+    if (current?.type !== 'home') return;
+    const record = app.querySelector('[data-action="show-records"]');
+    const saved = app.querySelector('[data-action="show-saved"]');
+    if (record) record.textContent = `送过 (${current.giftCount ?? '…'})`;
+    if (saved) saved.textContent = `想送 (${current.savedGifts?.length ?? '…'})`;
+  }
+  async function countGifts(snapshot, id, sequence, total, cursor) {
+    try {
+      while (cursor) {
+        const page = await api('/recipients/' + id + '/gifts?cursor=' + encodeURIComponent(cursor));
+        if (current !== snapshot || snapshot.sequence !== sequence) return;
+        total += page.items.length;
+        cursor = page.next_cursor;
+      }
+      if (current === snapshot && snapshot.sequence === sequence) { snapshot.giftCount = total; updateBookCounts(); }
+    } catch (_) { if (current === snapshot && snapshot.sequence === sequence) { snapshot.giftCount = null; updateBookCounts(); } }
+  }
+  async function loadSavedForRecipient(snapshot, id, sequence) {
+    if (snapshot.savedPromise) return snapshot.savedPromise;
+    snapshot.savedPromise = api('/recipients/' + id + '/saved-gifts').then((items) => {
+      if (current !== snapshot || snapshot.sequence !== sequence) return;
+      snapshot.savedGifts = items;
+      updateBookCounts();
+      if (snapshot.viewMode === 'saved') renderSaved(items, id);
+    }).catch((error) => {
+      if (current === snapshot && snapshot.sequence === sequence && snapshot.viewMode === 'saved')
+        app.querySelector('#book-log').innerHTML = `<div class="book-error">${e(error.message)}<button data-action="show-saved">重试</button></div>`;
+    }).finally(() => { snapshot.savedPromise = null; });
+    return snapshot.savedPromise;
+  }
+  function renderSaved(items, personId) {
+    app.querySelector('#book-log').innerHTML = items.length ? items.map((item) =>
+      `<article class="saved-card"><div class="saved-row"><h3>${e(item.gift_name)}</h3><button data-action="saved-menu" data-id="${e(item.id)}" aria-label="${e(item.gift_name)}更多操作">•••</button></div><p class="saved-meta">${item.source_snapshot.source_type === 'internal_mock' ? '演示案例' : '来自真实案例'} · ${e(item.intended_occasion)} · ${e(item.intended_price_range)} 元</p><p class="saved-result">${e(D.reaction(item.source_snapshot.reaction_level).label)} · ${e(D.evidenceLabels(item.source_snapshot.behavior_evidence))}</p><button class="saved-convert" data-go="convert/${e(item.id)}?recipient=${e(personId)}">记为已送</button></article>`).join('') : `<div class="log-empty"><h3>看到合适的礼物先放这里，真正送出后再变成一段记录</h3><button data-go="find/${e(personId)}">给 TA 找灵感</button></div>`;
   }
   async function selectRecipient(id, remember = true, view = 'records') {
     if (current?.type !== 'home') return;
@@ -152,6 +187,10 @@
     current.person = person;
     current.gifts = [];
     current.cursor = null;
+    current.giftCount = null;
+    current.savedGifts = null;
+    current.savedPromise = null;
+    current.swipeId = '';
     current.viewMode = view;
     history.replaceState(null, '', '#home?recipient=' + encodeURIComponent(id) + (view === 'saved' ? '&view=saved' : ''));
     const scroll = app.querySelector('.recipient-scroll');
@@ -163,7 +202,9 @@
     const scrollRect = nextScroll.getBoundingClientRect();
     if (tabRect.left < scrollRect.left) nextScroll.scrollLeft -= scrollRect.left - tabRect.left;
     if (tabRect.right > scrollRect.right) nextScroll.scrollLeft += tabRect.right - scrollRect.right;
-    app.querySelector('#book-content').innerHTML = `<section class="recipient-summary"><div><h2>${e(person.display_name)}</h2><p>${[person.relation_type, person.age_range ? person.age_range + ' 岁' : ''].filter(Boolean).map(e).join(' · ')}</p></div><button class="summary-edit" data-action="person-menu" aria-label="管理这位 TA">•••</button></section><div class="ta-actions"><div class="ta-switch"><button data-action="show-records" class="${view === 'records' ? 'selected' : ''}">记录</button><button data-action="show-saved" class="${view === 'saved' ? 'selected' : ''}">想送</button></div><button class="find-link" data-go="find/${e(id)}">找礼物 ›</button></div>${person.tags?.length ? `<div class="book-tags">${person.tags.map((tag) => `<span>${e(tag)}</span>`).join('')}</div>` : ''}<section class="gift-log" id="book-log"><p class="log-loading">正在读取记录…</p></section><button class="gift-fab ${view === 'saved' ? 'hidden' : ''}" data-go="record/${e(id)}" aria-label="记一份礼物">＋</button>`;
+    app.querySelector('#book-content').innerHTML = `<section class="recipient-summary"><div><h2>${e(person.display_name)}</h2><p>${[person.relation_type, person.age_range ? person.age_range + ' 岁' : ''].filter(Boolean).map(e).join(' · ')}</p></div><button class="summary-edit" data-action="person-menu" aria-label="管理这位 TA">•••</button></section><div class="ta-actions"><button class="find-link" data-go="find/${e(id)}">✦ 给 TA 找灵感</button><button class="record-action" data-go="record/${e(id)}">＋ 记一份</button></div><div class="ta-switch"><button data-action="show-records" class="${view === 'records' ? 'selected' : ''}">送过 (…)</button><button data-action="show-saved" class="${view === 'saved' ? 'selected' : ''}">想送 (…)</button></div>${person.tags?.length ? `<div class="book-tags">${person.tags.map((tag) => `<span>${e(tag)}</span>`).join('')}</div>` : ''}<section class="gift-log" id="book-log"><p class="log-loading">正在读取记录…</p></section>`;
+    const snapshot = current;
+    void loadSavedForRecipient(snapshot, id, sequence);
     if (remember) {
       activeWrite = activeWrite.catch(() => {}).then(() => api('/me/active-recipient', 'PATCH', { recipient_id: id }));
       activeWrite.catch((error) => toast(error.message));
@@ -173,40 +214,32 @@
       if (current?.type !== 'home' || current.sequence !== sequence) return;
       current.gifts = result.items;
       current.cursor = result.next_cursor;
-      app.querySelector('#book-log').innerHTML = logHTML(result.items) + (result.next_cursor ? '<button class="load-more" data-action="load-more-home">更早的记录</button>' : '');
+      void countGifts(snapshot, id, sequence, result.items.length, result.next_cursor);
+      if (current.viewMode === 'records') app.querySelector('#book-log').innerHTML = logHTML(result.items) + (result.next_cursor ? '<button class="load-more" data-action="load-more-home">更早的记录</button>' : '');
       if (view === 'saved') await showSaved();
     } catch (error) {
-      if (current?.type === 'home' && current.sequence === sequence)
+      if (current?.type === 'home' && current.sequence === sequence && current.viewMode === 'records')
         app.querySelector('#book-log').innerHTML = `<div class="book-error">${e(error.message)}<button data-action="retry-person">重试</button></div>`;
     }
   }
   async function showSaved() {
     if (current?.type !== 'home' || !current.person) return;
+    setSwipe();
     const personId = current.person.id;
     current.viewMode = 'saved';
     history.replaceState(null, '', '#home?recipient=' + encodeURIComponent(personId) + '&view=saved');
     app.querySelector('[data-action="show-records"]').classList.remove('selected');
     app.querySelector('[data-action="show-saved"]').classList.add('selected');
-    app.querySelector('.gift-fab').classList.add('hidden');
-    app.querySelector('#book-log').innerHTML = '<p class="log-loading">正在读取想送…</p>';
-    try {
-      const items = await api('/recipients/' + personId + '/saved-gifts');
-      if (current?.type !== 'home' || current.person.id !== personId || current.viewMode !== 'saved') return;
-      current.savedGifts = items;
-      app.querySelector('#book-log').innerHTML = items.length ? items.map((item) =>
-        `<article class="saved-card"><div class="saved-row"><h3>${e(item.gift_name)}</h3><button data-action="saved-menu" data-id="${e(item.id)}" aria-label="${e(item.gift_name)}更多操作">•••</button></div><p class="saved-meta">${item.source_snapshot.source_type === 'internal_mock' ? '演示案例' : '来自真实案例'} · ${e(item.intended_occasion)} · ${e(item.intended_price_range)} 元</p><p class="saved-result">${e(D.reaction(item.source_snapshot.reaction_level).label)} · ${e(D.evidenceLabels(item.source_snapshot.behavior_evidence))}</p><button class="saved-convert" data-go="convert/${e(item.id)}?recipient=${e(personId)}">已经送了</button></article>`).join('') : '<div class="log-empty"><h3>还没有想送的礼物</h3><button data-go="find/' + e(personId) + '">找一些礼物</button></div>';
-    } catch (error) {
-      if (current?.type === 'home' && current.person.id === personId)
-        app.querySelector('#book-log').innerHTML = `<div class="book-error">${e(error.message)}<button data-action="show-saved">重试</button></div>`;
-    }
+    if (current.savedGifts) renderSaved(current.savedGifts, personId);
+    else { app.querySelector('#book-log').innerHTML = '<p class="log-loading">正在读取想送…</p>'; await loadSavedForRecipient(current, personId, current.sequence); }
   }
   function showRecords() {
     if (current?.type !== 'home') return;
+    setSwipe();
     current.viewMode = 'records';
     history.replaceState(null, '', '#home?recipient=' + encodeURIComponent(current.person.id));
     app.querySelector('[data-action="show-records"]').classList.add('selected');
     app.querySelector('[data-action="show-saved"]').classList.remove('selected');
-    app.querySelector('.gift-fab').classList.remove('hidden');
     app.querySelector('#book-log').innerHTML = logHTML(current.gifts) + (current.cursor ? '<button class="load-more" data-action="load-more-home">更早的记录</button>' : '');
   }
   async function home(version, query) {
@@ -219,7 +252,7 @@
     showTabs('home');
     app.innerHTML = bookHeader() + (people.length
       ? `<div id="book-tabs">${recipientTabs(people, id)}</div><div id="book-content"></div>`
-      : '<section class="book-first"><h2>还没有人</h2><button data-go="person-new">添加第一个人</button></section>');
+      : '<section class="book-first"><h2>先把一个重要的人放进礼物簿</h2><button data-go="person-new">添加 TA</button></section>');
     if (id) await selectRecipient(id, true, query.get('view') === 'saved' ? 'saved' : 'records');
     if (version === routeVersion && homeScroll) requestAnimationFrame(() => window.scrollTo(0, homeScroll));
   }
@@ -507,6 +540,7 @@
       dialog.close();
       confirmAction('移除想送？', `“${item.gift_name}”将不再显示。`, '移除', async () => {
         await api('/saved-gifts/' + item.id, 'DELETE');
+        current.savedGifts = null;
         await showSaved();
       });
       return;
@@ -525,10 +559,20 @@
     }
     if (name === 'person-menu') {
       const id = current?.person?.id;
-      if (id) openDialog(`<h2>${e(current.person.display_name)}</h2><div class="gift-menu"><button data-go="person-edit/${e(id)}">编辑 TA</button><button data-action="sort-hint">调整顺序</button><button data-action="delete-current-person">删除 TA</button></div>`);
+      if (id) openDialog(`<h2>${e(current.person.display_name)}</h2><div class="gift-menu"><button data-go="person-edit/${e(id)}">编辑 TA</button><button data-action="sort-hint">调整排序</button><button data-action="delete-current-person">删除 TA</button></div>`);
       return;
     }
-    if (name === 'sort-hint') { dialog.close(); toast('长按上方 TA 并拖动排序'); return; }
+    if (name === 'sort-hint') {
+      const index = current.people.findIndex((person) => person.id === current.person.id);
+      dialog.innerHTML = `<h2>调整排序</h2><div class="gift-menu"><button data-action="move-person-up" ${index === 0 ? 'disabled' : ''}>上移</button><button data-action="move-person-down" ${index === current.people.length - 1 ? 'disabled' : ''}>下移</button></div>`;
+      return;
+    }
+    if (name === 'move-person-up' || name === 'move-person-down') {
+      const from = current.people.findIndex((person) => person.id === current.person.id);
+      dialog.close();
+      await reorderRecipients(from, from + (name === 'move-person-up' ? -1 : 1));
+      return;
+    }
     if (name === 'delete-current-person') {
       const person = current?.person;
       if (!person) return;
@@ -767,6 +811,11 @@
       app.querySelectorAll('.recipient-tab').forEach((tab) => tab.classList.remove('sorting', 'sort-target'));
       return;
     }
+    await reorderRecipients(from, to);
+  }
+  async function reorderRecipients(from, to) {
+    if (current?.type !== 'home' || from < 0 || to < 0 || to >= current.people.length || from === to) return;
+    const old = current.people.slice();
     const reordered = old.slice();
     reordered.splice(to, 0, ...reordered.splice(from, 1));
     current.people = reordered;
@@ -780,6 +829,14 @@
       app.querySelector('#book-tabs').innerHTML = recipientTabs(old, current.person.id);
       toast(error.message);
     }
+  }
+  function setSwipe(id = '') {
+    if (current?.type !== 'home') return;
+    const previous = current.swipeId;
+    if (previous === id) return;
+    if (previous) app.querySelector(`#gift-${CSS.escape(previous)} .log-entry`)?.classList.remove('swiped');
+    current.swipeId = id;
+    if (id) app.querySelector(`#gift-${CSS.escape(id)} .log-entry`)?.classList.add('swiped');
   }
   document.addEventListener('touchstart', (event) => {
     const gift = event.target.closest('.log-entry');
@@ -795,6 +852,7 @@
       }, 520);
       return;
     }
+    if (!event.target.closest('.swipe-actions')) setSwipe();
     const tab = event.target.closest('.recipient-tab');
     if (!tab) return;
     event.preventDefault();
@@ -808,7 +866,7 @@
       if (Math.abs(dx) > 12 || Math.abs(dy) > 12) { giftTouch.moved = true; clearTimeout(giftTouch.timer); }
       if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) {
         event.preventDefault();
-        giftTouch.gift.classList.toggle('swiped', dx < 0);
+        setSwipe(dx < 0 ? giftTouch.gift.dataset.giftId : '');
       }
       return;
     }
@@ -824,7 +882,12 @@
     }
   }, { passive: false });
   document.addEventListener('touchend', () => {
-    if (giftTouch) { clearTimeout(giftTouch.timer); giftTouch = null; return; }
+    if (giftTouch) {
+      clearTimeout(giftTouch.timer);
+      if (giftTouch.moved) { suppressGiftClick = true; setTimeout(() => { suppressGiftClick = false; }, 0); }
+      giftTouch = null;
+      return;
+    }
     const touch = touchState;
     touchState = null;
     if (!touch) return;
@@ -850,9 +913,11 @@
     const button = event.target.closest('button');
     if (!button) {
       const gift = event.target.closest('.log-entry');
-      if (gift && !gift.classList.contains('swiped') && !suppressGiftClick) nav('gift/' + gift.dataset.giftId);
+      if (current?.swipeId) { setSwipe(); return; }
+      if (gift && !suppressGiftClick) nav('gift/' + gift.dataset.giftId);
       return;
     }
+    if (!button.closest('.swipe-actions')) setSwipe();
     if (button.disabled) return;
     if (button.dataset.recipientId) {
       if (suppressTabClick) { suppressTabClick = false; return; }
