@@ -3,7 +3,7 @@ const domain = require('../../utils/domain');
 Page({
   data: {
     user: null, avatarText: '我', avatarKey: '', recipients: [], active: null, gifts: [], cursor: null,
-    loading: true, loadingLog: false, error: '', logError: '', viewMode: 'records', giftCount: null, savedGifts: [], savedCount: null, savedLoading: false, savedError: '',
+    loading: true, loadingLog: false, error: '', logError: '', viewMode: 'records', savedGifts: [], savedLoading: false, savedError: '',
     findOccasions: ['请选择场景', ...domain.OCCASIONS], findPrices: ['请选择预算', ...domain.PRICE_RANGES],
     findOccasion: '', findPrice: '', matches: [], matchLoading: false, matchError: '',
     sortingId: '', targetId: '', activeTabId: '', railLeft: 0, scrolled: false, statusTop: 0,
@@ -35,7 +35,7 @@ Page({
       const active = recipients.find((person) => person.id === id) || null;
       this.setData({ user: me.user, avatarText: Array.from(me.user.display_name || '我')[0], avatarKey: me.user.avatar_key || '', recipients, active, loading: false });
       if (id) await this.selectId(id, preserveView);
-      else this.setData({ active: null, gifts: [], cursor: null, giftCount: null, savedCount: null });
+      else this.setData({ active: null, gifts: [], cursor: null });
       if (this.restoreScroll != null && wx.pageScrollTo) {
         wx.pageScrollTo({ scrollTop: this.restoreScroll, duration: 0 });
         this.restoreScroll = null;
@@ -48,7 +48,7 @@ Page({
     const active = this.data.recipients.find((person) => person.id === id);
     if (!active) return;
     const viewMode = preserveView ? this.data.viewMode : 'records';
-    this.setData({ active, activeTabId: 'recipient-' + id, gifts: [], cursor: null, giftCount: null, savedCount: null, swipeId: '', logError: '', loadingLog: true, viewMode, savedGifts: [] });
+    this.setData({ active, activeTabId: 'recipient-' + id, gifts: [], cursor: null, swipeId: '', logError: '', loadingLog: true, viewMode, savedGifts: [] });
     const sequence = this.sequence = (this.sequence || 0) + 1;
     this.loadSaved();
     this.activeWrite = (this.activeWrite || Promise.resolve()).catch(() => {}).then(() => store.request('/v1/me/active-recipient', 'PATCH', { recipient_id: id }));
@@ -57,23 +57,11 @@ Page({
       const result = await store.request('/v1/recipients/' + id + '/gifts');
       if (sequence !== this.sequence) return;
       this.setData({ gifts: domain.giftLog(result.items), cursor: result.next_cursor });
-      this.countGifts(id, sequence, result.items.length, result.next_cursor);
     } catch (error) {
       if (sequence === this.sequence) this.setData({ logError: error.message });
     } finally {
       if (sequence === this.sequence) this.setData({ loadingLog: false });
     }
-  },
-  async countGifts(id, sequence, total, cursor) {
-    try {
-      while (cursor) {
-        const page = await store.request('/v1/recipients/' + id + '/gifts?cursor=' + encodeURIComponent(cursor));
-        if (sequence !== this.sequence || this.data.active?.id !== id) return;
-        total += page.items.length;
-        cursor = page.next_cursor;
-      }
-      if (sequence === this.sequence && this.data.active?.id === id) this.setData({ giftCount: total });
-    } catch (_) { if (sequence === this.sequence && this.data.active?.id === id) this.setData({ giftCount: null }); }
   },
   select(e) {
     if (this.suppressTap) { this.suppressTap = false; return; }
@@ -108,7 +96,7 @@ Page({
   },
   giftSheetSaved() { this.setData({ viewMode: 'records' }); return this.selectId(this.data.active.id); },
   showRecords() { this.setData({ viewMode: 'records', swipeId: '' }); },
-  showSaved() { this.setData({ viewMode: 'saved', swipeId: '' }); if (this.data.savedCount === null && !this.data.savedLoading) return this.loadSaved(); },
+  showSaved() { this.setData({ viewMode: 'saved', swipeId: '' }); },
   async loadSaved() {
     if (!this.data.active) return;
     const id = this.data.active.id;
@@ -116,7 +104,7 @@ Page({
     this.setData({ savedLoading: true, savedError: '' });
     try {
       const savedGifts = await store.request('/v1/recipients/' + id + '/saved-gifts');
-      if (this.data.active?.id === id && sequence === this.sequence) this.setData({ savedCount: savedGifts.length, savedGifts: savedGifts.map((item) => ({ ...item, reaction_label: domain.reaction(item.source_snapshot.reaction_level).label, evidence_label: domain.evidenceLabels(item.source_snapshot.behavior_evidence) })) });
+      if (this.data.active?.id === id && sequence === this.sequence) this.setData({ savedGifts: savedGifts.map((item) => ({ ...item, reaction_label: domain.reaction(item.source_snapshot.reaction_level).label, evidence_label: domain.evidenceLabels(item.source_snapshot.behavior_evidence) })) });
     } catch (error) { if (sequence === this.sequence) this.setData({ savedError: error.message }); }
     finally { if (sequence === this.sequence) this.setData({ savedLoading: false }); }
   },

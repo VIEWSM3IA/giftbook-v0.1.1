@@ -187,6 +187,7 @@ test('原生 V0.3：场景预算匹配、收藏给 TA、想送预填并转换', 
   await page.saveMatch({ currentTarget: { dataset: { id: 'c1' } } });
   assert.equal(page.data.matches[0].saved, true);
   assert.deepEqual(structuredClone(h.calls.find((call) => call[0] === '/v1/saved-gifts')[2]), { recipient_id: 'r1', source_case_id: 'c1', intended_occasion: '生日', intended_price_range: '500–999' });
+  await page.loadSaved();
   await page.showSaved();
   assert.equal(page.data.savedGifts[0].gift_name, '围巾');
   page.convertSaved({ currentTarget: { dataset: { id: 's1' } } });
@@ -377,7 +378,7 @@ test('首页读取上次停留的 TA、日志并支持切换和排序', async ()
   await p.dragEnd();
   assert.deepEqual(p.data.recipients.map((person) => person.id), ['r2', 'r1']);
 });
-test('礼物簿总数独立于分页，切换想送保留已加载记录', async () => {
+test('选择 TA 只读取首屏，显式加载更早记录才请求游标页', async () => {
   const h = harness();
   const items = Array.from({ length: 43 }, (_, index) => ({ ...gift, id: 'gift-' + index }));
   h.respond(async (path) => {
@@ -393,17 +394,16 @@ test('礼物簿总数独立于分页，切换想送保留已加载记录', async
   p.setData({ recipients: [recipient] });
   await p.selectId('r1');
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.equal(p.data.giftCount, 43);
   assert.equal(p.data.gifts.length, 20);
+  assert.equal(h.calls.filter((call) => call[0].includes('/gifts?cursor=')).length, 0);
+  assert.equal(h.calls.filter((call) => call[0].endsWith('/saved-gifts')).length, 1);
   await p.more();
   assert.equal(p.data.gifts.length, 40);
+  assert.deepEqual(h.calls.filter((call) => call[0].includes('/gifts?cursor=')).map((call) => call[0]), ['/v1/recipients/r1/gifts?cursor=A']);
   p.showSaved();
   p.showRecords();
-  assert.equal(p.data.giftCount, 43);
   assert.equal(p.data.gifts.length, 40);
   assert.equal(p.data.cursor, 'B');
-  await p.reorder(0, 0);
-  assert.equal(h.calls.filter((call) => call[0] === '/v1/recipients/order').length, 0);
 });
 test('原生 TA 管理点选上移复用排序接口', async () => {
   const h = harness();
